@@ -340,35 +340,36 @@ export default function App() {
 
   if (!agent) {
     return (
+    return (
       <SafeAreaView style={[styles.container, { justifyContent: 'center', padding: 20 }]}>
-        <StatusBar barStyle="light-content" backgroundColor={COLORS.background} />
-        <View style={{ backgroundColor: COLORS.surface, padding: 20, borderRadius: 10, elevation: 3, borderWidth: 1, borderColor: COLORS.border }}>
+        <StatusBar barStyle="light-content" backgroundColor={COLORS.primary} />
+        <View style={{ backgroundColor: '#FFF', padding: 20, borderRadius: 10, elevation: 3 }}>
           <Text style={{ fontSize: 24, fontWeight: 'bold', marginBottom: 20, textAlign: 'center', color: COLORS.primary }}>
             Agent Login
           </Text>
-          <Text style={{ marginBottom: 10, color: COLORS.textSecondary }}>Username:</Text>
+          <Text style={{ marginBottom: 10, color: '#333' }}>Username:</Text>
           <TextInput
             style={{
-              borderWidth: 1, borderColor: COLORS.border, backgroundColor: COLORS.background,
-              padding: 15, borderRadius: 8, fontSize: 16, marginBottom: 15, color: COLORS.textPrimary
+              borderWidth: 1, borderColor: '#DDD', backgroundColor: '#F9F9F9',
+              padding: 15, borderRadius: 8, fontSize: 16, marginBottom: 15, color: '#000'
             }}
             value={agentInput}
             onChangeText={setAgentInput}
             placeholder="e.g. admin"
-            placeholderTextColor={COLORS.placeholder}
+            placeholderTextColor="#999"
             autoCapitalize="none"
           />
 
-          <Text style={{ marginBottom: 10, color: COLORS.textSecondary }}>Password:</Text>
+          <Text style={{ marginBottom: 10, color: '#333' }}>Password:</Text>
           <TextInput
             style={{
-              borderWidth: 1, borderColor: COLORS.border, backgroundColor: COLORS.background,
-              padding: 15, borderRadius: 8, fontSize: 16, marginBottom: 20, color: COLORS.textPrimary
+              borderWidth: 1, borderColor: '#DDD', backgroundColor: '#F9F9F9',
+              padding: 15, borderRadius: 8, fontSize: 16, marginBottom: 20, color: '#000'
             }}
             value={passwordInput}
             onChangeText={setPasswordInput}
             placeholder="Enter Password"
-            placeholderTextColor={COLORS.placeholder}
+            placeholderTextColor="#999"
             secureTextEntry
           />
 
@@ -655,16 +656,15 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     alignItems: 'center',
     padding: 10,
-    backgroundColor: COLORS.headerBg,
-    borderBottomWidth: 1,
-    borderBottomColor: COLORS.border,
-    paddingTop: StatusBar.currentHeight ? StatusBar.currentHeight + 10 : 10, // Adjust for status bar overlap
-    height: 80,
+    backgroundColor: COLORS.primary, // Blue Header
+    paddingTop: StatusBar.currentHeight ? StatusBar.currentHeight + 10 : 10,
+    height: 70, // Slightly shorter
+    elevation: 4
   },
   statLabel: {
-    fontSize: 14,
+    fontSize: 16,
     fontWeight: 'bold',
-    color: COLORS.textSecondary,
+    color: '#FFF', // White text on blue header
   },
   tabsContainer: {
     flexDirection: 'row',
@@ -672,28 +672,29 @@ const styles = StyleSheet.create({
   tab: {
     paddingVertical: 6,
     paddingHorizontal: 16,
-    backgroundColor: COLORS.surface,
+    backgroundColor: '#FFF',
     marginLeft: 8,
-    borderRadius: 20, // Pill shape
-    borderWidth: 1,
-    borderColor: COLORS.border
+    borderRadius: 4, // More square
+    borderWidth: 0,
+    elevation: 2
   },
   activeTab: {
-    backgroundColor: COLORS.primary,
-    borderColor: COLORS.primary
+    backgroundColor: COLORS.btnOrange, // Orange active tab maybe? Or just Blue
+    borderWidth: 2,
+    borderColor: '#FFF'
   },
   tabText: {
-    color: COLORS.textSecondary,
-    fontWeight: '600',
+    color: COLORS.primary,
+    fontWeight: 'bold',
   },
   activeTabText: {
-    color: COLORS.black, // Dark text on bright primary usually reads better if primary is light, else white
+    color: COLORS.primary,
     fontWeight: 'bold',
   },
   formContainer: {
     flex: 1,
     padding: 10,
-    backgroundColor: COLORS.background, // Should match main bg
+    backgroundColor: '#F0F0F0', // Light Grey background
   },
   inputWrapper: {
     backgroundColor: COLORS.surface,

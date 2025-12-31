@@ -1,30 +1,26 @@
 export const COLORS = {
-  // Premium Dark Palette
-  background: '#121212',
-  surface: '#1E1E1E',
-  primary: '#BB86FC', // Vibrant Purple for accents
-  secondary: '#03DAC6', // Teal for secondary actions
-
-  // Header
-  headerBg: '#2C2C2C',
+  primary: '#1976D2', // Active Blue (Material)
+  secondary: '#2196F3', // Lighter Blue
+  background: '#FFFFFF',
+  surface: '#F5F5F5',
+  headerBg: '#1976D2', // Solid Blue Header
 
   // Text
-  textPrimary: '#FFFFFF',
-  textSecondary: '#B3B3B3',
-  placeholder: '#6E6E6E',
+  textPrimary: '#000000',
+  textSecondary: '#555555',
+  placeholder: '#888888',
 
-  // Actions
-  btnGreen: '#00C853', // Success
-  btnPink: '#FF4081', // Special
-  btnOrange: '#FF6D00', // Warning/Action
-  btnRed: '#D50000', // Error/Delete
-  btnBlue: '#2962FF', // Info
+  // Action Buttons
+  btnGreen: '#388E3C',
+  btnPink: '#E91E63',
+  btnOrange: '#FF5722',
+  btnRed: '#D32F2F',
 
   // Borders & Dividers
-  border: '#333333',
+  border: '#E0E0E0',
   white: '#FFFFFF',
   black: '#000000',
-  error: '#CF6679'
+  error: '#D32F2F'
 };
 
 export const GAMES = [

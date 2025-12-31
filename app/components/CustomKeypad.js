@@ -107,68 +107,55 @@ export default function CustomKeypad({ onKeyPress, onSave, onClear, onWhatsapp }
 
 const styles = StyleSheet.create({
     container: {
-        backgroundColor: COLORS.surface,
+        backgroundColor: COLORS.primary, // Blue background for keypad area
         padding: 5,
-        borderTopWidth: 1,
-        borderColor: COLORS.border,
-        paddingBottom: 20
     },
     row: {
         flexDirection: 'row',
         justifyContent: 'space-between',
         marginBottom: 8,
-        gap: 8, // Adds uniform spacing
+        gap: 8,
     },
     key: {
-        flex: 1, // Stretch to fill space
-        height: 60, // Taller for better touch
-        backgroundColor: '#333333', // Darker grey for keys
+        flex: 1,
+        height: 55,
+        backgroundColor: COLORS.secondary, // Light Blue keys
         justifyContent: 'center',
         alignItems: 'center',
-        borderRadius: 12, // More rounded
+        borderRadius: 4,
         elevation: 2,
-        shadowColor: '#000',
-        shadowOffset: { width: 0, height: 2 },
-        shadowOpacity: 0.3,
-        shadowRadius: 2,
     },
     keyBlack: {
         flex: 1,
-        height: 60,
-        backgroundColor: COLORS.black,
+        height: 55,
+        backgroundColor: '#000000',
         justifyContent: 'center',
         alignItems: 'center',
-        borderRadius: 12,
-        borderWidth: 1,
-        borderColor: COLORS.border
+        borderRadius: 4,
     },
     keySave: {
         flex: 1,
-        height: 60,
-        backgroundColor: COLORS.primary, // Primary color for Save
+        height: 55,
+        backgroundColor: '#000000', // Black Save button as per reference
         justifyContent: 'center',
         alignItems: 'center',
-        borderRadius: 12,
-        shadowColor: COLORS.primary,
-        shadowOffset: { width: 0, height: 4 },
-        shadowOpacity: 0.4,
-        shadowRadius: 4,
+        borderRadius: 4,
     },
     keyWapp: {
         flex: 1,
-        height: 60,
+        height: 55,
         backgroundColor: '#25D366',
         justifyContent: 'center',
         alignItems: 'center',
-        borderRadius: 12,
+        borderRadius: 4,
     },
     keyText: {
-        color: COLORS.white,
+        color: '#FFF',
         fontSize: 24,
         fontWeight: '600',
     },
     saveText: {
-        color: COLORS.black, // Contrast on primary
+        color: '#FFF',
         fontSize: 18,
         fontWeight: 'bold',
     }
