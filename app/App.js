@@ -92,8 +92,27 @@ export default function App() {
   const loadGames = async () => {
     const { data } = await ticketService.getActiveGames();
     if (data && data.length > 0) {
-      setGames(data);
-      setSelectedGame(data[0]);
+      // Pre-calculate display properties
+      const processedGames = data.map(g => {
+        const timeStr = new Date(g.draw_time).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: true });
+        let displayName = g.name;
+        let color = '#2196F3'; // Default
+
+        // Logic to match Screenshot: D-1:00PM, K-3:00PM, etc.
+        if (timeStr.includes('1:00') || timeStr.includes('01:00')) {
+          displayName = 'D-1:00PM'; color = '#2962FF'; // Blue
+        } else if (timeStr.includes('3:00') || timeStr.includes('03:00')) {
+          displayName = 'K-3:00PM'; color = '#2E7D32'; // Green (K for 3pm)
+        } else if (timeStr.includes('6:00') || timeStr.includes('06:00')) {
+          displayName = 'D-6:00PM'; color = '#E91E63'; // Pink
+        } else if (timeStr.includes('8:00') || timeStr.includes('08:00')) {
+          displayName = 'D-8:00PM'; color = '#EF6C00'; // Orange
+        }
+        return { ...g, displayName, color };
+      });
+
+      setGames(processedGames);
+      setSelectedGame(processedGames[0]);
     }
   };
 
