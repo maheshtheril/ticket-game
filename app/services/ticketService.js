@@ -72,7 +72,7 @@ export const ticketService = {
         const { data: games, error } = await supabase
             .from('game_schedules')
             .select('*')
-            .eq('is_active', true)
+            //.eq('is_active', true) // User requested ALL games
             .order('draw_time', { ascending: true });
 
         if (error) {
