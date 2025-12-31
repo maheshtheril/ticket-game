@@ -205,19 +205,16 @@ export default function App() {
         numbersToProcess.push(i.toString() + "00");
       }
     } else if (is111) {
-      // 111 Logic: Range of single digits, repeated
-      let loopStart = parseInt(startNumber);
-      let loopEnd = parseInt(endNumber);
+      // 111 Logic: Range based on the First Digit of the input
+      // If Start="000" (0) and End="333" (3) -> Loop 0 to 3 -> Generate 000, 111, 222, 333
+      let startDigit = parseInt(startNumber.charAt(0));
+      let endDigit = parseInt(endNumber.charAt(0));
 
-      if (isNaN(loopStart) || isNaN(loopEnd) || loopStart > loopEnd) {
-        alert('Invalid Range'); return;
+      if (isNaN(startDigit) || isNaN(endDigit) || startDigit > endDigit) {
+        alert('Invalid Range. Use e.g., 000 to 333'); return;
       }
-      for (let i = loopStart; i <= loopEnd; i++) {
-        // Generate e.g. "111", "222" based on maxNumberLength
-        // If i=1, max=3 -> "111"
-        const digitChar = i.toString().slice(-1); // Take last char if > 9 (unlikely but safe)
-        const repeatedNum = digitChar.repeat(maxNumberLength);
-        numbersToProcess.push(repeatedNum);
+      for (let i = startDigit; i <= endDigit; i++) {
+        numbersToProcess.push(i.toString().repeat(maxNumberLength));
       }
     } else if (isSet) {
       numbersToProcess = getPermutations(number);
