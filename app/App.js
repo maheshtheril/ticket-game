@@ -556,26 +556,43 @@ export default function App() {
 
               {isGameDropdownOpen && (
                 <View style={{
-                  position: 'absolute', top: '100%', left: 0, right: 0,
+                  position: 'absolute', top: 50, left: 0, right: 0,
                   backgroundColor: '#FFF', borderWidth: 1, borderColor: '#CCC',
-                  borderRadius: 8, maxHeight: 200, elevation: 5
+                  borderRadius: 4, elevation: 10, padding: 5, zIndex: 2000
                 }}>
                   <FlatList
                     data={games}
                     keyExtractor={item => item.id.toString()}
-                    renderItem={({ item }) => (
-                      <TouchableOpacity
-                        style={{ padding: 12, borderBottomWidth: 1, borderBottomColor: '#EEE' }}
-                        onPress={() => {
-                          setSelectedGame(item);
-                          setIsGameDropdownOpen(false);
-                        }}
-                      >
-                        <Text style={{ fontSize: 16, color: '#333' }}>
-                          {item.name} ({new Date(item.draw_time).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })})
-                        </Text>
-                      </TouchableOpacity>
-                    )}
+                    renderItem={({ item }) => {
+                      // Determine color based on game name
+                      let bgColor = '#2196F3'; // Default Blue
+                      const nameUpper = item.name.toUpperCase();
+                      if (nameUpper.includes('1:00') || nameUpper.includes('1 PM')) bgColor = '#2962FF'; // Blue
+                      else if (nameUpper.includes('3:00') || nameUpper.includes('3 PM')) bgColor = '#2E7D32'; // Green
+                      else if (nameUpper.includes('6:00') || nameUpper.includes('6 PM')) bgColor = '#E91E63'; // Pink
+                      else if (nameUpper.includes('8:00') || nameUpper.includes('8 PM')) bgColor = '#EF6C00'; // Orange
+
+                      return (
+                        <TouchableOpacity
+                          style={{
+                            backgroundColor: bgColor,
+                            paddingVertical: 15,
+                            marginBottom: 5,
+                            borderRadius: 4,
+                            alignItems: 'center',
+                            justifyContent: 'center'
+                          }}
+                          onPress={() => {
+                            setSelectedGame(item);
+                            setIsGameDropdownOpen(false);
+                          }}
+                        >
+                          <Text style={{ fontSize: 22, color: '#FFF', fontWeight: 'bold' }}>
+                            {item.name}
+                          </Text>
+                        </TouchableOpacity>
+                      );
+                    }}
                   />
                 </View>
               )}
