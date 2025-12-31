@@ -7,7 +7,8 @@ import {
   SafeAreaView,
   TouchableOpacity,
   FlatList,
-  StatusBar
+  StatusBar,
+  TextInput
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import CustomKeypad from './components/CustomKeypad';
@@ -19,7 +20,8 @@ export default function App() {
   const [currentTab, setCurrentTab] = useState(3); // Default Tab 3
   const [games, setGames] = useState([]);
   const [selectedGame, setSelectedGame] = useState(null); // Stores full object
-  const [agent, setAgent] = useState('demo_agent');
+  const [agent, setAgent] = useState(null);
+  const [agentInput, setAgentInput] = useState('');
 
   // Input States
   const [number, setNumber] = useState('');
@@ -285,6 +287,49 @@ export default function App() {
     </View>
   );
 
+  if (!agent) {
+    return (
+      <SafeAreaView style={[styles.container, { justifyContent: 'center', padding: 20 }]}>
+        <StatusBar barStyle="dark-content" backgroundColor="#F5F5F5" />
+        <View style={{ backgroundColor: '#FFF', padding: 20, borderRadius: 10, elevation: 3 }}>
+          <Text style={{ fontSize: 24, fontWeight: 'bold', marginBottom: 20, textAlign: 'center', color: COLORS.primary }}>
+            Agent Login
+          </Text>
+          <Text style={{ marginBottom: 10, color: '#666' }}>Enter your username to continue:</Text>
+          <TextInput
+            style={{
+              borderWidth: 1,
+              borderColor: '#DDD',
+              backgroundColor: '#F9F9F9',
+              padding: 15,
+              borderRadius: 8,
+              fontSize: 16,
+              marginBottom: 20
+            }}
+            value={agentInput}
+            onChangeText={setAgentInput}
+            placeholder="e.g. demo_agent"
+            autoCapitalize="none"
+          />
+          <TouchableOpacity
+            onPress={() => {
+              if (agentInput.trim().length > 0) setAgent(agentInput.trim());
+              else alert('Please enter a username');
+            }}
+            style={{
+              backgroundColor: COLORS.primary,
+              padding: 15,
+              borderRadius: 8,
+              alignItems: 'center'
+            }}
+          >
+            <Text style={{ color: '#FFF', fontWeight: 'bold', fontSize: 16 }}>LOGIN</Text>
+          </TouchableOpacity>
+        </View>
+      </SafeAreaView>
+    );
+  }
+
   return (
     <SafeAreaView style={styles.container}>
       <StatusBar barStyle="dark-content" backgroundColor="#FFF" />
@@ -461,6 +506,7 @@ const styles = StyleSheet.create({
     color: '#FFF',
   },
   formContainer: {
+    flex: 1,
     padding: 10,
     backgroundColor: COLORS.headerBg,
   },
