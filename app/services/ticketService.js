@@ -224,7 +224,7 @@ export const ticketService = {
             console.error('Buy Ticket Error:', err);
             return { data: null, error: err };
         }
-    }
+    },
     // 5. Declare Result (Admin)
     async declareResult(gameId, resultNumber) {
         const today = new Date().toISOString().split('T')[0];

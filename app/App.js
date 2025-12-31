@@ -28,8 +28,7 @@ export default function App() {
   const [currentView, setCurrentView] = useState('game'); // 'game' or 'users'
   const [newUsername, setNewUsername] = useState('');
   const [newPassword, setNewPassword] = useState('');
-  const [newUsername, setNewUsername] = useState('');
-  const [newPassword, setNewPassword] = useState('');
+
   const [newBalance, setNewBalance] = useState('');
 
   // Results State
