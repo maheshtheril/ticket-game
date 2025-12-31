@@ -20,8 +20,9 @@ export default function App() {
   const [currentTab, setCurrentTab] = useState(3); // Default Tab 3
   const [games, setGames] = useState([]);
   const [selectedGame, setSelectedGame] = useState(null); // Stores full object
-  const [agent, setAgent] = useState(null);
+  const [agent, setAgent] = useState(null); // Full User Object
   const [agentInput, setAgentInput] = useState('');
+  const [passwordInput, setPasswordInput] = useState('');
 
   // Input States
   const [number, setNumber] = useState('');
@@ -276,8 +277,8 @@ export default function App() {
     }
 
     // Real Save
-    // Pass tickets, gameId, and agentUsername
-    const { error } = await ticketService.buyTicket(tickets, selectedGame.id, agent);
+    // Pass tickets, gameId, and userId
+    const { error } = await ticketService.buyTicket(tickets, selectedGame.id, agent.id);
 
     if (error) {
       alert('Error saving: ' + (error.message || JSON.stringify(error)));
@@ -303,6 +304,21 @@ export default function App() {
     </View>
   );
 
+  const handleLogin = async () => {
+    if (agentInput.trim().length === 0 || passwordInput.trim().length === 0) {
+      alert('Please enter username and password');
+      return;
+    }
+
+    const { data, error } = await ticketService.login(agentInput.trim(), passwordInput.trim());
+
+    if (error) {
+      alert('Login Failed: ' + error);
+    } else {
+      setAgent(data); // Store full user object
+    }
+  };
+
   if (!agent) {
     return (
       <SafeAreaView style={[styles.container, { justifyContent: 'center', padding: 20 }]}>
@@ -311,32 +327,34 @@ export default function App() {
           <Text style={{ fontSize: 24, fontWeight: 'bold', marginBottom: 20, textAlign: 'center', color: COLORS.primary }}>
             Agent Login
           </Text>
-          <Text style={{ marginBottom: 10, color: '#666' }}>Enter your username to continue:</Text>
+          <Text style={{ marginBottom: 10, color: '#666' }}>Username:</Text>
           <TextInput
             style={{
-              borderWidth: 1,
-              borderColor: '#DDD',
-              backgroundColor: '#F9F9F9',
-              padding: 15,
-              borderRadius: 8,
-              fontSize: 16,
-              marginBottom: 20
+              borderWidth: 1, borderColor: '#DDD', backgroundColor: '#F9F9F9',
+              padding: 15, borderRadius: 8, fontSize: 16, marginBottom: 15
             }}
             value={agentInput}
             onChangeText={setAgentInput}
-            placeholder="e.g. demo_agent"
+            placeholder="e.g. admin"
             autoCapitalize="none"
           />
-          <TouchableOpacity
-            onPress={() => {
-              if (agentInput.trim().length > 0) setAgent(agentInput.trim());
-              else alert('Please enter a username');
-            }}
+
+          <Text style={{ marginBottom: 10, color: '#666' }}>Password:</Text>
+          <TextInput
             style={{
-              backgroundColor: COLORS.primary,
-              padding: 15,
-              borderRadius: 8,
-              alignItems: 'center'
+              borderWidth: 1, borderColor: '#DDD', backgroundColor: '#F9F9F9',
+              padding: 15, borderRadius: 8, fontSize: 16, marginBottom: 20
+            }}
+            value={passwordInput}
+            onChangeText={setPasswordInput}
+            placeholder="Enter Password"
+            secureTextEntry
+          />
+
+          <TouchableOpacity
+            onPress={handleLogin}
+            style={{
+              backgroundColor: COLORS.primary, padding: 15, borderRadius: 8, alignItems: 'center'
             }}
           >
             <Text style={{ color: '#FFF', fontWeight: 'bold', fontSize: 16 }}>LOGIN</Text>
@@ -378,7 +396,7 @@ export default function App() {
         </View>
 
         <View style={styles.inputWrapper}>
-          <Text style={styles.inputText}>{agent}</Text>
+          <Text style={styles.inputText}>{agent ? agent.username : ''}</Text>
           <Ionicons name="caret-down" size={16} color="#666" />
         </View>
 

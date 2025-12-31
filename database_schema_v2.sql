@@ -1,6 +1,6 @@
 
 -- 1. ENUMS and TYPES
-CREATE TYPE user_role AS ENUM ('admin', 'tenant', 'main_dealer', 'agent', 'stockist', 'user');
+CREATE TYPE user_role AS ENUM ('admin', 'main_agent', 'sub_agent', 'stockist', 'user');
 CREATE TYPE ticket_type AS ENUM ('single', 'double', 'triple', 'quad');
 CREATE TYPE ticket_status AS ENUM ('active', 'won', 'lost', 'cancelled');
 
@@ -55,7 +55,7 @@ INSERT INTO game_schedules (name, draw_time) VALUES
 
 -- 7. Insert Dummy User (for testing)
 INSERT INTO users (username, password_hash, role, balance) 
-VALUES ('demo_agent', 'hashed_pass', 'agent', 10000.00);
+VALUES ('demo_agent', 'hashed_pass', 'sub_agent', 10000.00);
 
 -- 8. Enable RLS (Security) but allow all for now (for easy testing)
 ALTER TABLE tickets ENABLE ROW LEVEL SECURITY;

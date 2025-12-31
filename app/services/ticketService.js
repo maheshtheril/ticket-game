@@ -1,6 +1,34 @@
 import { supabase } from '../lib/supabase';
 
 export const ticketService = {
+    // 0. Login
+    async login(username, password) {
+        try {
+            const { data: user, error } = await supabase
+                .from('users')
+                .select('*')
+                .eq('username', username)
+                .single();
+
+            if (error || !user) {
+                return { error: 'User not found' };
+            }
+
+            // Simple password check for simulation (In real app, use bcrypt on server)
+            if (user.password_hash !== password) {
+                return { error: 'Invalid password' };
+            }
+
+            if (!user.is_active) {
+                return { error: 'User is inactive' };
+            }
+
+            return { data: user, error: null };
+        } catch (err) {
+            return { error: err.message };
+        }
+    },
+
     // 1. Get Active Game Schedules
     async getActiveGames() {
         const { data: games, error } = await supabase
@@ -17,19 +45,10 @@ export const ticketService = {
     },
 
     // 2. Buy Tickets
-    async buyTicket(tickets, gameId, agentUsername) {
+    async buyTicket(tickets, gameId, userId) {
         if (!tickets || tickets.length === 0) return { error: { message: 'No tickets to save' } };
 
         try {
-            // A. Get User (Agent) ID
-            const { data: user, error: userError } = await supabase
-                .from('users')
-                .select('id, balance')
-                .eq('username', agentUsername)
-                .single();
-
-            if (userError || !user) throw new Error('Agent not found. Please log in.');
-
             // B. Get or Create Daily Draw
             // We need a draw for TODAY for this gameId
             const today = new Date().toISOString().split('T')[0];
@@ -56,13 +75,11 @@ export const ticketService = {
             }
 
             // C. Prepare Ticket Data
-            // Map App types "SUPER" (A) -> 'single', "BOX" (B) -> 'double' for schema compliance
-            // Note: Adjust logic if schema types differ.
             const dbTickets = tickets.map(t => ({
                 draw_id: draw.id,
-                user_id: user.id,
+                user_id: userId,
                 ticket_number: t.number,
-                ticket_type: mapTypeToEnum(t.boxType), // You need to implement this
+                ticket_type: mapTypeToEnum(t.boxType),
                 count: parseInt(t.count),
                 cost_per_unit: 10.00, // Hardcoded or fetch from settings
                 status: 'active'
