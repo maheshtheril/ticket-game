@@ -23,6 +23,8 @@ export default function App() {
 
   // Input States
   const [number, setNumber] = useState('');
+  const [startNumber, setStartNumber] = useState('');
+  const [endNumber, setEndNumber] = useState('');
   const [count, setCount] = useState('');
   const [focusedField, setFocusedField] = useState('number');
 
@@ -65,13 +67,19 @@ export default function App() {
 
     if (focusedField === 'number') {
       if (number.length >= maxNumberLength) return;
-
       const newNum = number + key;
       setNumber(newNum);
-
-      if (newNum.length === maxNumberLength) {
-        setFocusedField('count');
-      }
+      if (newNum.length === maxNumberLength) setFocusedField('count');
+    } else if (focusedField === 'start') {
+      if (startNumber.length >= maxNumberLength) return;
+      const newNum = startNumber + key;
+      setStartNumber(newNum);
+      if (newNum.length === maxNumberLength) setFocusedField('end');
+    } else if (focusedField === 'end') {
+      if (endNumber.length >= maxNumberLength) return;
+      const newNum = endNumber + key;
+      setEndNumber(newNum);
+      if (newNum.length === maxNumberLength) setFocusedField('count');
     } else if (focusedField === 'count') {
       setCount(prev => prev + key);
     }
@@ -79,8 +87,10 @@ export default function App() {
 
   const handleClear = () => {
     setNumber('');
+    setStartNumber('');
+    setEndNumber('');
     setCount('');
-    setFocusedField('number');
+    setFocusedField(checks.any ? 'start' : 'number');
   };
 
   const handleTabChange = (tab) => {
@@ -91,32 +101,60 @@ export default function App() {
   };
 
   const handleAddTicket = (typeLabel) => {
-    if (!number || !count) return;
+    // Validation
+    const isAny = checks.any;
+    if (isAny) {
+      if (!startNumber || !endNumber || !count) return;
+    } else {
+      if (!number || !count) return;
+    }
+
+    let ticketsToCreate = [];
+
+    // Determine loop range
+    let loopStart, loopEnd;
+    if (isAny) {
+      loopStart = parseInt(startNumber);
+      loopEnd = parseInt(endNumber);
+      if (isNaN(loopStart) || isNaN(loopEnd) || loopStart > loopEnd) {
+        alert('Invalid Range');
+        return;
+      }
+    }
 
     let typesToAdd = [];
-
-    // Determine which types to add
     if (typeLabel === 'ALL') {
-      // Add all distinct types for current tab
       if (currentTab === 1) typesToAdd = [btnLabels.A, btnLabels.B, btnLabels.C];
       if (currentTab === 2) typesToAdd = [btnLabels.A, btnLabels.B, btnLabels.C];
-      if (currentTab === 3) typesToAdd = [btnLabels.A, btnLabels.B]; // Only 2 for tab 3
+      if (currentTab === 3) typesToAdd = [btnLabels.A, btnLabels.B];
     } else {
       typesToAdd = [typeLabel];
     }
 
-    const newTickets = typesToAdd.map(type => ({
-      id: Date.now().toString() + Math.random(),
-      name: selectedGame.replace('D-', '').split(':')[0] + ' ' + type, // Simplified name
-      number: number,
-      count: count,
-      total: parseInt(count) * 10,
-      boxType: type,
-      // Assign color based on type
-      color: getTypeColor(type)
-    }));
+    // Generate Tickets
+    const generateForNumber = (numStr) => {
+      return typesToAdd.map(type => ({
+        id: Date.now().toString() + Math.random(),
+        name: selectedGame.replace('D-', '').split(':')[0] + ' ' + type,
+        number: numStr,
+        count: count,
+        total: parseInt(count) * 10,
+        boxType: type,
+        color: getTypeColor(type)
+      }));
+    };
 
-    setTickets([...newTickets, ...tickets]);
+    if (isAny) {
+      for (let i = loopStart; i <= loopEnd; i++) {
+        // Pad with leading zeros if needed based on maxNumberLength
+        let numStr = i.toString().padStart(maxNumberLength, '0');
+        ticketsToCreate = [...ticketsToCreate, ...generateForNumber(numStr)];
+      }
+    } else {
+      ticketsToCreate = generateForNumber(number);
+    }
+
+    setTickets([...ticketsToCreate, ...tickets]);
     handleClear();
   };
 
@@ -192,24 +230,60 @@ export default function App() {
         </View>
 
         <View style={styles.checkboxRow}>
-          <Checkbox label="Any" checked={checks.any} />
+          <Checkbox
+            label="Any"
+            checked={checks.any}
+            onPress={() => {
+              const newVal = !checks.any;
+              setChecks(p => ({ ...p, any: newVal }));
+              setFocusedField(newVal ? 'start' : 'number');
+              setNumber(''); setStartNumber(''); setEndNumber('');
+            }}
+          />
           <Checkbox label="Set" checked={checks.set} />
           <Checkbox label="100" checked={checks.c100} />
           <Checkbox label="111" checked={checks.c111} />
         </View>
 
         <View style={styles.inputsRow}>
-          <TouchableOpacity
-            style={[
-              styles.inputField,
-              { flex: 1, marginRight: 5, borderColor: focusedField === 'number' ? COLORS.primary : '#CCC', borderWidth: focusedField === 'number' ? 2 : 1 }
-            ]}
-            onPress={() => setFocusedField('number')}
-          >
-            <Text style={[styles.inputText, !number && { color: '#999' }]}>
-              {number || `|Number (${maxNumberLength})`}
-            </Text>
-          </TouchableOpacity>
+          {!checks.any ? (
+            <TouchableOpacity
+              style={[
+                styles.inputField,
+                { flex: 1, marginRight: 5, borderColor: focusedField === 'number' ? COLORS.primary : '#CCC', borderWidth: focusedField === 'number' ? 2 : 1 }
+              ]}
+              onPress={() => setFocusedField('number')}
+            >
+              <Text style={[styles.inputText, !number && { color: '#999' }]}>
+                {number || `|Number (${maxNumberLength})`}
+              </Text>
+            </TouchableOpacity>
+          ) : (
+            <>
+              <TouchableOpacity
+                style={[
+                  styles.inputField,
+                  { flex: 1, marginRight: 5, borderColor: focusedField === 'start' ? COLORS.primary : '#CCC', borderWidth: focusedField === 'start' ? 2 : 1 }
+                ]}
+                onPress={() => setFocusedField('start')}
+              >
+                <Text style={[styles.inputText, !startNumber && { color: '#999' }]}>
+                  {startNumber || 'Start'}
+                </Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={[
+                  styles.inputField,
+                  { flex: 1, marginRight: 5, borderColor: focusedField === 'end' ? COLORS.primary : '#CCC', borderWidth: focusedField === 'end' ? 2 : 1 }
+                ]}
+                onPress={() => setFocusedField('end')}
+              >
+                <Text style={[styles.inputText, !endNumber && { color: '#999' }]}>
+                  {endNumber || 'End'}
+                </Text>
+              </TouchableOpacity>
+            </>
+          )}
 
           <TouchableOpacity
             style={[
@@ -251,14 +325,17 @@ export default function App() {
   );
 }
 
-const Checkbox = ({ label, checked }) => (
-  <View style={{ flexDirection: 'row', alignItems: 'center', marginRight: 15 }}>
+const Checkbox = ({ label, checked, onPress }) => (
+  <TouchableOpacity onPress={onPress} style={{ flexDirection: 'row', alignItems: 'center', marginRight: 15 }}>
     <View style={{
       width: 20, height: 20, borderWidth: 1, borderColor: '#666', marginRight: 5,
-      backgroundColor: checked ? COLORS.primary : 'transparent'
-    }} />
+      backgroundColor: checked ? COLORS.primary : 'transparent',
+      justifyContent: 'center', alignItems: 'center'
+    }}>
+      {checked && <Ionicons name="checkmark" size={14} color="#FFF" />}
+    </View>
     <Text style={{ fontWeight: 'bold' }}>{label}</Text>
-  </View>
+  </TouchableOpacity>
 );
 
 const ActionButton = ({ label, color, onPress }) => (
