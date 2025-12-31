@@ -287,13 +287,17 @@ export default function App() {
     }
   };
 
+  const handleDeleteTicket = (id) => {
+    setTickets(prevTickets => prevTickets.filter(t => t.id !== id));
+  };
+
   const renderTicketItem = ({ item }) => (
     <View style={styles.ticketRow}>
       <Text style={[styles.ticketText, { color: item.color, flex: 2 }]}>{item.name}</Text>
       <Text style={[styles.ticketText, { color: item.color, flex: 1 }]}>{item.number}</Text>
       <Text style={[styles.ticketText, { color: item.color, flex: 1 }]}>{item.count}</Text>
       <Text style={[styles.ticketText, { color: item.color, flex: 1 }]}>{item.total}</Text>
-      <TouchableOpacity onPress={() => { }}>
+      <TouchableOpacity onPress={() => handleDeleteTicket(item.id)}>
         <Ionicons name="trash-outline" size={20} color="#666" />
       </TouchableOpacity>
     </View>
