@@ -214,6 +214,29 @@ export const ticketService = {
         }
 
         return { allowed: true };
+        return { allowed: true };
+    },
+
+    // 4.1 Update User Limits
+    async updateUserLimits(userId, limits) {
+        // limits: { daily_sales_limit: 1000, max_single_number_count: 50, ... }
+        const { error } = await supabase
+            .from('user_limits')
+            .upsert({ user_id: userId, ...limits }, { onConflict: 'user_id' });
+
+        if (error) return { error: error.message };
+        return { data: true, error: null };
+    },
+
+    // 4.2 Toggle User Status (Block)
+    async toggleUserStatus(userId, isActive) {
+        const { error } = await supabase
+            .from('users')
+            .update({ is_active: isActive })
+            .eq('id', userId);
+
+        if (error) return { error: error.message };
+        return { data: true, error: null };
     },
 
     // 2. Buy Tickets (UPDATED)
