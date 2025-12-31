@@ -80,46 +80,135 @@ export const ticketService = {
         return { data: games, error: null };
     },
 
-    // 2. Buy Tickets
+    // 3. Helper: Get User Scheme Rates
+    async getUserRates(userId) {
+        // Get user's scheme_id
+        const { data: user } = await supabase.from('users').select('scheme_id').eq('id', userId).single();
+        if (!user || !user.scheme_id) return {}; // Fallback
+
+        const { data: rates } = await supabase
+            .from('scheme_rates')
+            .select('ticket_type, buy_rate')
+            .eq('scheme_id', user.scheme_id);
+
+        // Convert to map: { 'single': 10.0, 'double': 11.0 }
+        const rateMap = {};
+        if (rates) rates.forEach(r => rateMap[r.ticket_type] = r.buy_rate);
+        return rateMap;
+    },
+
+    // 4. Helper: Check Limits
+    async checkLimits(userId, newTickets, totalCost) {
+        // A. Check Daily Sales Limit
+        const today = new Date().toISOString().split('T')[0];
+
+        // Get Limit
+        const { data: limits } = await supabase.from('user_limits').select('*').eq('user_id', userId).single();
+
+        // If no limits defined, allow (or default to some hard limit)
+        if (!limits) return { allowed: true };
+
+        // Get Current Sales Today (Sum tickets.total_cost)
+        // Note: Real app should use a more efficient query or materialized view
+        const { data: salesData } = await supabase
+            .from('tickets')
+            .select('total_cost')
+            .eq('user_id', userId)
+            .gte('created_at', today + 'T00:00:00');
+
+        const currentTotal = salesData ? salesData.reduce((sum, t) => sum + (t.total_cost || 0), 0) : 0;
+
+        if (limits.daily_sales_limit && (currentTotal + totalCost > limits.daily_sales_limit)) {
+            return { allowed: false, reason: `Daily Limit Exceeded. Limit: ${limits.daily_sales_limit}, Used: ${currentTotal}` };
+        }
+
+        // B. Check Number Limits (Max Count per Number)
+        // Group new tickets by number
+        const numberCounts = {};
+        newTickets.forEach(t => {
+            if (!numberCounts[t.number]) numberCounts[t.number] = 0;
+            numberCounts[t.number] += parseInt(t.count);
+        });
+
+        // For each number, check DB count
+        // Optimally: Batch check. Here: Loop (prototype)
+        for (const num of Object.keys(numberCounts)) {
+            const newCount = numberCounts[num];
+
+            // Decide which limit applies based on length
+            let limit = 1000;
+            if (num.length === 1) limit = limits.max_single_number_count || 1000;
+            if (num.length === 2) limit = limits.max_double_number_count || 1000;
+            if (num.length === 3) limit = limits.max_triple_number_count || 1000;
+
+            // Fetch current count for this number today
+            // This is expensive in loop - optimizing for V1
+            const { count: currentCount } = await supabase
+                .from('tickets')
+                .select('*', { count: 'exact', head: true })
+                .eq('user_id', userId) // Risk usually check Global or User? Requirement says "Each user has limits".
+                .eq('ticket_number', num)
+                .gte('created_at', today + 'T00:00:00'); // Assuming daily limit per number
+
+            if ((currentCount || 0) + newCount > limit) {
+                return { allowed: false, reason: `Limit validation failed for Number ${num}. Max: ${limit}` };
+            }
+        }
+
+        return { allowed: true };
+    },
+
+    // 2. Buy Tickets (UPDATED)
     async buyTicket(tickets, gameId, userId) {
         if (!tickets || tickets.length === 0) return { error: { message: 'No tickets to save' } };
 
         try {
-            // B. Get or Create Daily Draw
-            // We need a draw for TODAY for this gameId
+            // A. Get Rates
+            const rates = await this.getUserRates(userId);
+
+            // B. Calculate Cost & Prepare objects
+            const dbTickets = [];
+            let totalBatchCost = 0;
+
+            // Pre-process to create DB friendly array
+            // We need draw_id first.
+
+            // Get Draw (Same as before)
             const today = new Date().toISOString().split('T')[0];
-
             let { data: draw, error: drawError } = await supabase
-                .from('daily_draws')
-                .select('id')
-                .eq('schedule_id', gameId)
-                .eq('draw_date', today)
-                .maybeSingle();
-
+                .from('daily_draws').select('id').eq('schedule_id', gameId).eq('draw_date', today).maybeSingle();
             if (drawError) throw drawError;
-
-            // If no draw exists, create one (Auto-open the draw)
             if (!draw) {
                 const { data: newDraw, error: createError } = await supabase
-                    .from('daily_draws')
-                    .insert([{ schedule_id: gameId, draw_date: today }])
-                    .select('id')
-                    .single();
-
+                    .from('daily_draws').insert([{ schedule_id: gameId, draw_date: today }]).select('id').single();
                 if (createError) throw createError;
                 draw = newDraw;
             }
 
-            // C. Prepare Ticket Data
-            const dbTickets = tickets.map(t => ({
-                draw_id: draw.id,
-                user_id: userId,
-                ticket_number: t.number,
-                ticket_type: mapTypeToEnum(t.boxType),
-                count: parseInt(t.count),
-                cost_per_unit: 10.00, // Hardcoded or fetch from settings
-                status: 'active'
-            }));
+            tickets.forEach(t => {
+                const enumType = mapTypeToEnum(t.boxType);
+                const rate = rates[enumType] || 10.00; // Default if no scheme
+                const count = parseInt(t.count);
+                const total = count * rate;
+
+                totalBatchCost += total;
+
+                dbTickets.push({
+                    draw_id: draw.id,
+                    user_id: userId,
+                    ticket_number: t.number,
+                    ticket_type: enumType,
+                    count: count,
+                    cost_per_unit: rate,
+                    status: 'active'
+                });
+            });
+
+            // C. Validate Limits
+            const limitCheck = await this.checkLimits(userId, tickets, totalBatchCost);
+            if (!limitCheck.allowed) {
+                return { error: { message: limitCheck.reason } };
+            }
 
             // D. Insert Tickets
             const { data: savedTickets, error: insertError } = await supabase
@@ -140,10 +229,9 @@ export const ticketService = {
 
 // Helper to map UI types to DB Enum
 function mapTypeToEnum(uiType) {
-    // UI: SUPER, BOX, etc.
-    // DB: single, double, triple, quad
-    // Default mapping for now:
-    if (uiType === 'SUPER') return 'single';
-    if (uiType === 'BOX') return 'double';
+    if (uiType === 'SUPER') return 'triple_straight'; // Adjusted mapping for V3
+    if (uiType === 'BOX') return 'triple_box';
+    if (uiType === 'AB' || uiType === 'AC' || uiType === 'BC') return 'double';
+    if (uiType === 'A' || uiType === 'B' || uiType === 'C') return 'single';
     return 'single'; // Fallback
 }
