@@ -848,5 +848,31 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: '600',
     color: COLORS.textPrimary
+  },
+  dashboardBtnBlue: {
+    backgroundColor: '#0D47A1', // Deep Blue
+    padding: 15,
+    borderRadius: 10,
+    elevation: 3,
+    marginBottom: 5
+  },
+  dashboardBtnLightBlue: {
+    backgroundColor: '#1976D2', // Medium Blue
+    padding: 15,
+    borderRadius: 10,
+    elevation: 3,
+    marginBottom: 5
+  },
+  dashboardBtnSkyBlue: {
+    backgroundColor: '#2196F3', // Light Blue
+    padding: 15,
+    borderRadius: 10,
+    elevation: 3,
+    marginBottom: 5
+  },
+  dashboardBtnText: {
+    color: '#FFF',
+    fontSize: 20,
+    fontWeight: 'normal',
   }
 });
