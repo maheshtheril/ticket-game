@@ -740,6 +740,7 @@ export default function App() {
       {/* Content Area */}
       {currentView === 'dashboard' && renderDashboard()}
       {currentView === 'rates' && renderRates()}
+      {currentView === 'prizes' && renderPrizes()}
 
 
       {currentView === 'game' && (
