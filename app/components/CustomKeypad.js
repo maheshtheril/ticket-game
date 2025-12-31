@@ -11,10 +11,18 @@ const KEY_HEIGHT = 50;
 const Key = ({ label, onPress, type = 'number', icon }) => {
     const isAction = type === 'action';
     const isSave = type === 'save';
+    const isWhatsapp = type === 'whatsapp';
 
     let bg = COLORS.secondary;
     if (isAction) bg = COLORS.secondary; // Or slightly different
-    if (isSave) bg = '#000000'; // Black save button based on screenshot
+    if (isSave) bg = '#000000'; // Black save button
+    if (isWhatsapp) bg = '#25D366'; // WhatsApp Green
+
+    if (label === 'Clear') return (
+        <TouchableOpacity style={[styles.key, { backgroundColor: 'transparent' }]} onPress={onPress}>
+            <Text style={[styles.keyText, { color: COLORS.white, fontSize: 16, fontWeight: 'bold' }]}>Clear</Text>
+        </TouchableOpacity>
+    );
 
     if (label === 'Clear') return (
         <TouchableOpacity style={[styles.key, { backgroundColor: 'transparent' }]} onPress={onPress}>
@@ -87,21 +95,24 @@ export default function CustomKeypad({ onKeyPress, onSave, onClear, onWhatsapp }
 
             {/* Row 4 */}
             <View style={styles.row}>
-                <TouchableOpacity style={styles.keyBlack} onPress={() => handlePress('BACK')}>
+                <TouchableOpacity style={styles.key} onPress={() => handlePress('BACK')}>
                     <Ionicons name="arrow-back" size={24} color="#FFF" />
                 </TouchableOpacity>
 
                 <Key label="0" onPress={() => handlePress('0')} />
 
-                <TouchableOpacity style={styles.keyWapp} onPress={() => handlePress('WHATSAPP')}>
+                <TouchableOpacity style={[styles.key, { backgroundColor: '#25D366' }]} onPress={() => handlePress('WHATSAPP')}>
                     <Ionicons name="logo-whatsapp" size={24} color="#FFF" />
                 </TouchableOpacity>
 
-                <TouchableOpacity style={styles.keySave} onPress={() => handlePress('SAVE')}>
-                    <Text style={styles.saveText}>Save</Text>
+                <TouchableOpacity style={[styles.key, { backgroundColor: '#000' }]} onPress={() => handlePress('SAVE')}>
+                    <Text style={{ color: '#FFF', fontWeight: 'bold', fontSize: 16 }}>Save</Text>
                 </TouchableOpacity>
             </View>
-        </View>
+            <Text style={styles.saveText}>Save</Text>
+        </TouchableOpacity>
+            </View >
+        </View >
     );
 }
 

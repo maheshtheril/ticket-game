@@ -129,7 +129,20 @@ export default function App() {
 
   const handleKeyPress = (key) => {
     if (key === 'BACK') return;
-    if (key === 'NEXT') return;
+    if (key === 'NEXT') return; // Next logic if any?
+
+    // Handle 'SAVE' key from Keypad -> Triggers Add Ticket
+    if (key === 'SAVE') {
+      // Default to 'A' or currently selected mode? 
+      // The keypad 'Save' likely means "Add to List" or "Buy"?
+      // Screenshot has separate "Add" button usually? No, screenshot shows "Save" on keypad.
+      // It likely submits the current number input as a ticket.
+      // We'll assume it defaults to adding 'ALL' or currently selected Tab logic?
+      // Let's assume it adds based on current context. 
+      // For now, let's map it to 'ALL' to be safe or maybe just triggers the primary action.
+      handleAddTicket('ALL');
+      return;
+    }
 
     // Handle Backspace / Delete
     if (key === 'X') {
