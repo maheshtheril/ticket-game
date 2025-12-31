@@ -32,12 +32,12 @@ export default function App() {
 
   const [checks, setChecks] = useState({
     any: false,
-    set: false, // Set logic
-    c100: false,
+    set: false,
+    c100: false, // 100 logic
     c111: false
   });
 
-  // ... (Load Games Effect omitted for brevity, logic unchanged) ...
+  // Load Games (Mock)
   React.useEffect(() => {
     loadGames();
   }, []);
@@ -62,15 +62,34 @@ export default function App() {
   const totalRs = tickets.reduce((sum, t) => sum + (t.total || 0), 0);
 
   const handleKeyPress = (key) => {
-    if (key === 'BACK') return; // Handled by standard backspace button if exists
-    if (key === 'NEXT') return; // Handled by next button
+    if (key === 'BACK') return;
+    if (key === 'NEXT') return;
 
     // Handle Backspace / Delete
     if (key === 'X') {
-      if (focusedField === 'number') setNumber(prev => prev.slice(0, -1));
-      if (focusedField === 'start') setStartNumber(prev => prev.slice(0, -1));
-      if (focusedField === 'end') setEndNumber(prev => prev.slice(0, -1));
-      if (focusedField === 'count') setCount(prev => prev.slice(0, -1));
+      if (focusedField === 'number') {
+        setNumber(prev => prev.slice(0, -1));
+      }
+      if (focusedField === 'start') {
+        if (startNumber.length === 0) return;
+        setStartNumber(prev => prev.slice(0, -1));
+      }
+      if (focusedField === 'end') {
+        if (endNumber.length === 0) {
+          setFocusedField('start'); // Jump back
+          return;
+        }
+        setEndNumber(prev => prev.slice(0, -1));
+      }
+      if (focusedField === 'count') {
+        if (count.length === 0) {
+          // Jump back depending on mode
+          if (checks.any || checks.c100) setFocusedField('end');
+          else setFocusedField('number');
+          return;
+        }
+        setCount(prev => prev.slice(0, -1));
+      }
       return;
     }
 
@@ -96,16 +115,13 @@ export default function App() {
   };
 
   const handleClear = () => {
-    setNumber('');
-    setStartNumber('');
-    setEndNumber('');
-    setCount('');
-    setFocusedField(checks.any ? 'start' : 'number');
+    // User requested "clear should clear only list"
+    setTickets([]);
   };
 
   const handleTabChange = (tab) => {
     setCurrentTab(tab);
-    setNumber(''); updateChecks('none'); // Reset checks on tab change
+    setNumber(''); updateChecks('none');
     setCount('');
     setFocusedField('number');
   };
@@ -113,19 +129,27 @@ export default function App() {
   const updateChecks = (type) => {
     if (type === 'none') {
       setChecks({ any: false, set: false, c100: false, c111: false });
+      // Optional: clear inputs when unchecking all
+      setNumber(''); setStartNumber(''); setEndNumber('');
+      setFocusedField('number');
       return;
     }
-    // Mutually exclusive logic: if 'any' is checked, 'set' is unchecked, etc.
-    setChecks(prev => {
-      const newState = { ...prev, [type]: !prev[type] };
-      // Enforce exclusivity if needed, for now mainly Any vs Set
-      if (type === 'any' && newState.any) newState.set = false;
-      if (type === 'set' && newState.set) newState.any = false;
 
-      // Reset fields when switching modes
-      if (type === 'any') {
-        setNumber(''); setStartNumber(''); setEndNumber('');
-        setFocusedField(newState.any ? 'start' : 'number');
+    setChecks(prev => {
+      const newState = { any: false, set: false, c100: false, c111: false }; // Clear others
+      newState[type] = !prev[type]; // Toggle current
+
+      if (!newState[type]) {
+        setFocusedField('number');
+      } else {
+        // If toggling ON
+        if (type === 'any' || type === 'c100') {
+          setFocusedField('start');
+          setNumber(''); setStartNumber(''); setEndNumber('');
+        } else {
+          setFocusedField('number');
+          setNumber('');
+        }
       }
       return newState;
     });
@@ -146,11 +170,10 @@ export default function App() {
   };
 
   const handleAddTicket = (typeLabel) => {
-    const isAny = checks.any;
-    const isSet = checks.set;
+    const { any: isAny, set: isSet, c100: is100 } = checks;
 
     // Validation
-    if (isAny) {
+    if (isAny || is100) {
       if (!startNumber || !endNumber || !count) return;
     } else {
       if (!number || !count) return;
@@ -169,11 +192,19 @@ export default function App() {
       for (let i = loopStart; i <= loopEnd; i++) {
         numbersToProcess.push(i.toString().padStart(maxNumberLength, '0'));
       }
+    } else if (is100) {
+      let loopStart = parseInt(startNumber);
+      let loopEnd = parseInt(endNumber);
+      if (isNaN(loopStart) || isNaN(loopEnd) || loopStart > loopEnd) {
+        alert('Invalid Range'); return;
+      }
+      for (let i = loopStart; i <= loopEnd; i++) {
+        // 100 logic: i + "00"
+        numbersToProcess.push(i.toString() + "00");
+      }
     } else if (isSet) {
-      // Generate Permutations
       numbersToProcess = getPermutations(number);
     } else {
-      // Single Number
       numbersToProcess = [number];
     }
 
@@ -203,7 +234,10 @@ export default function App() {
     });
 
     setTickets([...ticketsToCreate, ...tickets]);
-    handleClear();
+    // Reset Inputs after add
+    setNumber(''); setStartNumber(''); setEndNumber(''); setCount('');
+    if (isAny || is100) setFocusedField('start');
+    else setFocusedField('number');
   };
 
   // Helper to get color
@@ -264,7 +298,9 @@ export default function App() {
         </View>
       </View>
 
+      {/* Form Container */}
       <View style={styles.formContainer}>
+        {/* Game/Agent Dropdowns (Mock) */}
         <View style={styles.inputWrapper}>
           <Text style={styles.inputText}>{selectedGame}</Text>
           <Ionicons name="caret-down" size={16} color="#666" />
@@ -275,28 +311,19 @@ export default function App() {
           <Ionicons name="caret-down" size={16} color="#666" />
         </View>
 
+        {/* Checkboxes */}
         <View style={styles.checkboxRow}>
-          <Checkbox
-            label="Any"
-            checked={checks.any}
-            onPress={() => updateChecks('any')}
-          />
-          <Checkbox
-            label="Set"
-            checked={checks.set}
-            onPress={() => updateChecks('set')}
-          />
-          <Checkbox label="100" checked={checks.c100} />
+          <Checkbox label="Any" checked={checks.any} onPress={() => updateChecks('any')} />
+          <Checkbox label="Set" checked={checks.set} onPress={() => updateChecks('set')} />
+          <Checkbox label="100" checked={checks.c100} onPress={() => updateChecks('c100')} />
           <Checkbox label="111" checked={checks.c111} />
         </View>
 
+        {/* Inputs */}
         <View style={styles.inputsRow}>
-          {!checks.any ? (
+          {(!checks.any && !checks.c100) ? (
             <TouchableOpacity
-              style={[
-                styles.inputField,
-                { flex: 1, marginRight: 5, borderColor: focusedField === 'number' ? COLORS.primary : '#CCC', borderWidth: focusedField === 'number' ? 2 : 1 }
-              ]}
+              style={[styles.inputField, { flex: 1, marginRight: 5, borderColor: focusedField === 'number' ? COLORS.primary : '#CCC', borderWidth: focusedField === 'number' ? 2 : 1 }]}
               onPress={() => setFocusedField('number')}
             >
               <Text style={[styles.inputText, !number && { color: '#999' }]}>
@@ -306,66 +333,49 @@ export default function App() {
           ) : (
             <>
               <TouchableOpacity
-                style={[
-                  styles.inputField,
-                  { flex: 1, marginRight: 5, borderColor: focusedField === 'start' ? COLORS.primary : '#CCC', borderWidth: focusedField === 'start' ? 2 : 1 }
-                ]}
+                style={[styles.inputField, { flex: 1, marginRight: 5, borderColor: focusedField === 'start' ? COLORS.primary : '#CCC', borderWidth: focusedField === 'start' ? 2 : 1 }]}
                 onPress={() => setFocusedField('start')}
               >
-                <Text style={[styles.inputText, !startNumber && { color: '#999' }]}>
-                  {startNumber || 'Start'}
-                </Text>
+                <Text style={[styles.inputText, !startNumber && { color: '#999' }]}>{startNumber || 'Start'}</Text>
               </TouchableOpacity>
               <TouchableOpacity
-                style={[
-                  styles.inputField,
-                  { flex: 1, marginRight: 5, borderColor: focusedField === 'end' ? COLORS.primary : '#CCC', borderWidth: focusedField === 'end' ? 2 : 1 }
-                ]}
+                style={[styles.inputField, { flex: 1, marginRight: 5, borderColor: focusedField === 'end' ? COLORS.primary : '#CCC', borderWidth: focusedField === 'end' ? 2 : 1 }]}
                 onPress={() => setFocusedField('end')}
               >
-                <Text style={[styles.inputText, !endNumber && { color: '#999' }]}>
-                  {endNumber || 'End'}
-                </Text>
+                <Text style={[styles.inputText, !endNumber && { color: '#999' }]}>{endNumber || 'End'}</Text>
               </TouchableOpacity>
             </>
           )}
 
           <TouchableOpacity
-            style={[
-              styles.inputField,
-              { flex: 1, borderColor: focusedField === 'count' ? COLORS.primary : '#CCC', borderWidth: focusedField === 'count' ? 2 : 1 }
-            ]}
+            style={[styles.inputField, { flex: 1, borderColor: focusedField === 'count' ? COLORS.primary : '#CCC', borderWidth: focusedField === 'count' ? 2 : 1 }]}
             onPress={() => setFocusedField('count')}
           >
-            <Text style={[styles.inputText, !count && { color: '#999' }]}>
-              {count || 'Count'}
-            </Text>
+            <Text style={[styles.inputText, !count && { color: '#999' }]}>{count || 'Count'}</Text>
           </TouchableOpacity>
+          <View style={styles.actionRow}>
+            <ActionButton label={`D-${btnLabels.A}-1`} color={COLORS.btnGreen} onPress={() => handleAddTicket(btnLabels.A)} />
+            <ActionButton label={`D-${btnLabels.B}-1`} color={COLORS.btnPink} onPress={() => handleAddTicket(btnLabels.B)} />
+            {btnLabels.C && <ActionButton label={`D-${btnLabels.C}-1`} color={COLORS.btnOrange} onPress={() => handleAddTicket(btnLabels.C)} />}
+            <ActionButton label={btnLabels.All} color={COLORS.btnRed} onPress={() => handleAddTicket('ALL')} />
+          </View>
         </View>
 
-        <View style={styles.actionRow}>
-          <ActionButton label={`D-${btnLabels.A}-1`} color={COLORS.btnGreen} onPress={() => handleAddTicket(btnLabels.A)} />
-          <ActionButton label={`D-${btnLabels.B}-1`} color={COLORS.btnPink} onPress={() => handleAddTicket(btnLabels.B)} />
-          {btnLabels.C && <ActionButton label={`D-${btnLabels.C}-1`} color={COLORS.btnOrange} onPress={() => handleAddTicket(btnLabels.C)} />}
-          <ActionButton label={btnLabels.All} color={COLORS.btnRed} onPress={() => handleAddTicket('ALL')} />
+        <View style={styles.listContainer}>
+          <FlatList
+            data={tickets}
+            renderItem={renderTicketItem}
+            keyExtractor={item => item.id}
+            contentContainerStyle={{ paddingBottom: 10 }}
+          />
         </View>
-      </View>
 
-      <View style={styles.listContainer}>
-        <FlatList
-          data={tickets}
-          renderItem={renderTicketItem}
-          keyExtractor={item => item.id}
-          contentContainerStyle={{ paddingBottom: 10 }}
+        <CustomKeypad
+          onKeyPress={handleKeyPress}
+          onSave={handleSave}
+          onClear={handleClear}
+          onWhatsapp={() => alert('Open Whatsapp')}
         />
-      </View>
-
-      <CustomKeypad
-        onKeyPress={handleKeyPress}
-        onSave={handleSave}
-        onClear={handleClear}
-        onWhatsapp={() => alert('Open Whatsapp')}
-      />
     </SafeAreaView>
   );
 }
