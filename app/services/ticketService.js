@@ -19,7 +19,9 @@ export const ticketService = {
                 return { error: 'Invalid password' };
             }
 
-            if (!user.is_active) {
+            // Check is_active only if it exists (defaults to true)
+            // If column is missing in older schema, user.is_active will be undefined
+            if (user.is_active === false) {
                 return { error: 'User is inactive' };
             }
 
