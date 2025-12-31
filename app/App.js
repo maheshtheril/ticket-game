@@ -480,9 +480,9 @@ export default function App() {
               <Ionicons name="menu" size={24} color="#FFF" />
             </TouchableOpacity>
           )}
-          <Text style={{ fontSize: 20, fontWeight: 'bold', color: '#FFF' }}>PVC</Text>
+          <Text style={{ fontSize: 20, fontWeight: 'bold', color: '#FFF' }}>{agent ? agent.username : 'PVC'}</Text>
         </View>
-        <Text style={{ fontSize: 18, fontWeight: 'bold', color: '#FFF' }}>PVC</Text>
+        <Text style={{ fontSize: 18, fontWeight: 'bold', color: '#FFF' }}>{agent ? agent.username : 'PVC'}</Text>
       </View>
 
       {/* Content Area */}
