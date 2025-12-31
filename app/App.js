@@ -8,7 +8,9 @@ import {
   TouchableOpacity,
   FlatList,
   StatusBar,
-  TextInput
+  TextInput,
+  Animated,
+  Switch
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 
