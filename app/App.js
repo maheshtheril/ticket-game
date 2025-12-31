@@ -12,13 +12,13 @@ import {
 import { Ionicons } from '@expo/vector-icons';
 import CustomKeypad from './components/CustomKeypad';
 import { COLORS } from './constants/theme';
-import { ticketService } from './services/ticketService'; // Using the Mock service now
+import { ticketService } from './services/ticketService'; // Using the real service now
 
 export default function App() {
   const [tickets, setTickets] = useState([]);
   const [currentTab, setCurrentTab] = useState(3); // Default Tab 3
   const [games, setGames] = useState([]);
-  const [selectedGame, setSelectedGame] = useState('DEAR-1 PM');
+  const [selectedGame, setSelectedGame] = useState(null); // Stores full object
   const [agent, setAgent] = useState('demo_agent');
 
   // Input States
@@ -37,7 +37,7 @@ export default function App() {
     c111: false
   });
 
-  // Load Games (Mock)
+  // Load Games (Real)
   React.useEffect(() => {
     loadGames();
   }, []);
@@ -46,7 +46,7 @@ export default function App() {
     const { data } = await ticketService.getActiveGames();
     if (data && data.length > 0) {
       setGames(data);
-      setSelectedGame(data[0].name);
+      setSelectedGame(data[0]);
     }
   };
 
@@ -221,9 +221,12 @@ export default function App() {
     // 3. Generate Tickets
     numbersToProcess.forEach(numStr => {
       typesToAdd.forEach(type => {
+        // Fix: Use selectedGame.name instead of selectedGame string
+        const gameName = selectedGame ? selectedGame.name : 'GAME';
+
         ticketsToCreate.push({
           id: Date.now().toString() + Math.random(),
-          name: selectedGame.replace('D-', '').split(':')[0] + ' ' + type,
+          name: gameName.replace('D-', '').split(':')[0] + ' ' + type,
           number: numStr,
           count: count,
           total: parseInt(count) * 10,
@@ -253,10 +256,17 @@ export default function App() {
       alert('No tickets to save!');
       return;
     }
-    // Mock Save
-    const { error } = await ticketService.buyTicket(tickets, 1);
+    if (!selectedGame || !selectedGame.id) {
+      alert('No game selected!');
+      return;
+    }
+
+    // Real Save
+    // Pass tickets, gameId, and agentUsername
+    const { error } = await ticketService.buyTicket(tickets, selectedGame.id, agent);
+
     if (error) {
-      alert('Error saving: ' + error.message);
+      alert('Error saving: ' + (error.message || JSON.stringify(error)));
     } else {
       alert('Saved Successfully!');
       setTickets([]);
@@ -300,9 +310,9 @@ export default function App() {
 
       {/* Form Container */}
       <View style={styles.formContainer}>
-        {/* Game/Agent Dropdowns (Mock) */}
+        {/* Game/Agent Dropdowns */}
         <View style={styles.inputWrapper}>
-          <Text style={styles.inputText}>{selectedGame}</Text>
+          <Text style={styles.inputText}>{selectedGame ? selectedGame.name : 'Loading...'}</Text>
           <Ionicons name="caret-down" size={16} color="#666" />
         </View>
 
@@ -376,6 +386,7 @@ export default function App() {
           onClear={handleClear}
           onWhatsapp={() => alert('Open Whatsapp')}
         />
+      </View>
     </SafeAreaView>
   );
 }
@@ -429,6 +440,14 @@ const styles = StyleSheet.create({
     paddingHorizontal: 15,
     backgroundColor: '#FFF',
     marginLeft: 5,
+    borderRadius: 2,
+    ios: {
+      shadowColor: '#000',
+      shadowOffset: { width: 0, height: 1 },
+      shadowOpacity: 0.1,
+      shadowRadius: 1,
+    },
+    elevation: 2,
     borderRadius: 2,
   },
   activeTab: {

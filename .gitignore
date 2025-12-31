@@ -42,3 +42,4 @@ yarn-error.*
 
 # Local Netlify folder
 .netlify
+.env
