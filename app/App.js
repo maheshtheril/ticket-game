@@ -565,656 +565,662 @@ export default function App() {
           <View style={{ flexDirection: 'row', alignItems: 'center' }}>
             <Ionicons name="grid-outline" size={28} color="#FFF" style={{ marginRight: 15 }} />
             <Text style={styles.dashboardBtnText}>Manage</Text>
+          </View>
+        </TouchableOpacity>
+      </View>
+    </View>
+  );
+
   const renderPrizes = () => {
     const prizeData = [
-            {name: 'First', rate: '5000', super: '400' },
-            {name: 'Second', rate: '500', super: '50' },
-            {name: 'Third', rate: '250', super: '30' },
-            {name: 'Fourt', rate: '100', super: '20' },
-            {name: 'Five', rate: '50', super: '20' },
-            {name: 'Guarantee (Six)', rate: '20', super: '10' },
-            {name: 'Box First Price', rate: '3000', super: '300' },
-            {name: 'Box Series', rate: '800', super: '30' },
-            {name: 'Single(1)', rate: '100', super: '0' },
-            {name: 'Double(2)', rate: '700', super: '30' },
-            ];
+      { name: 'First', rate: '5000', super: '400' },
+      { name: 'Second', rate: '500', super: '50' },
+      { name: 'Third', rate: '250', super: '30' },
+      { name: 'Fourt', rate: '100', super: '20' },
+      { name: 'Five', rate: '50', super: '20' },
+      { name: 'Guarantee (Six)', rate: '20', super: '10' },
+      { name: 'Box First Price', rate: '3000', super: '300' },
+      { name: 'Box Series', rate: '800', super: '30' },
+      { name: 'Single(1)', rate: '100', super: '0' },
+      { name: 'Double(2)', rate: '700', super: '30' },
+    ];
 
-            return (
-            <View style={{ flex: 1, padding: 20 }}>
-              {/* Header */}
-              <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 15 }}>
-                <TouchableOpacity onPress={() => setCurrentView('dashboard')}>
-                  <Ionicons name="arrow-back" size={24} color="#333" />
-                </TouchableOpacity>
-                <Text style={{ fontSize: 20, fontWeight: 'bold', marginLeft: 10, color: '#333' }}>Prize And Commission</Text>
-              </View>
+    return (
+      <View style={{ flex: 1, padding: 20 }}>
+        {/* Header */}
+        <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 15 }}>
+          <TouchableOpacity onPress={() => setCurrentView('dashboard')}>
+            <Ionicons name="arrow-back" size={24} color="#333" />
+          </TouchableOpacity>
+          <Text style={{ fontSize: 20, fontWeight: 'bold', marginLeft: 10, color: '#333' }}>Prize And Commission</Text>
+        </View>
 
-              {/* Table Header */}
-              <View style={{ flexDirection: 'row', backgroundColor: '#9E9E9E', padding: 10 }}>
-                <Text style={{ flex: 2, color: '#FFF', fontWeight: 'bold' }}>Prize</Text>
-                <Text style={{ flex: 1, color: '#FFF', fontWeight: 'bold' }}>Rate</Text>
-                <Text style={{ flex: 1, color: '#FFF', fontWeight: 'bold' }}>Super</Text>
-              </View>
+        {/* Table Header */}
+        <View style={{ flexDirection: 'row', backgroundColor: '#9E9E9E', padding: 10 }}>
+          <Text style={{ flex: 2, color: '#FFF', fontWeight: 'bold' }}>Prize</Text>
+          <Text style={{ flex: 1, color: '#FFF', fontWeight: 'bold' }}>Rate</Text>
+          <Text style={{ flex: 1, color: '#FFF', fontWeight: 'bold' }}>Super</Text>
+        </View>
 
-              <View style={{ flex: 1 }}>
-                <FlatList
-                  data={prizeData}
-                  keyExtractor={(item, index) => index.toString()}
-                  renderItem={({ item }) => (
-                    <View style={{ flexDirection: 'row', padding: 15, borderBottomWidth: 1, borderBottomColor: '#EEE', backgroundColor: '#FFF' }}>
-                      <Text style={{ flex: 2, color: '#333', fontWeight: 'bold' }}>{item.name}</Text>
-                      <Text style={{ flex: 1, color: '#333' }}>{item.rate}</Text>
-                      <Text style={{ flex: 1, color: '#333' }}>{item.super}</Text>
-                    </View>
-                  )}
-                />
+        <View style={{ flex: 1 }}>
+          <FlatList
+            data={prizeData}
+            keyExtractor={(item, index) => index.toString()}
+            renderItem={({ item }) => (
+              <View style={{ flexDirection: 'row', padding: 15, borderBottomWidth: 1, borderBottomColor: '#EEE', backgroundColor: '#FFF' }}>
+                <Text style={{ flex: 2, color: '#333', fontWeight: 'bold' }}>{item.name}</Text>
+                <Text style={{ flex: 1, color: '#333' }}>{item.rate}</Text>
+                <Text style={{ flex: 1, color: '#333' }}>{item.super}</Text>
               </View>
-            </View>
-            );
+            )}
+          />
+        </View>
+      </View>
+    );
   };
 
   const SideMenu = () => (
-            <Animated.View style={{
-              position: 'absolute', top: 0, bottom: 0, left: menuAnim, width: 300,
-              backgroundColor: '#FFF', zIndex: 5000, elevation: 20,
-              paddingTop: 50
-            }}>
-              <View style={{ padding: 20, backgroundColor: COLORS.primary, marginBottom: 10 }}>
-                <Text style={{ color: '#FFF', fontSize: 24, fontWeight: 'bold' }}>PVC</Text>
-                <Text style={{ color: '#FFF', fontSize: 16 }}>{agent ? agent.username : 'Guest'}</Text>
-              </View>
+    <Animated.View style={{
+      position: 'absolute', top: 0, bottom: 0, left: menuAnim, width: 300,
+      backgroundColor: '#FFF', zIndex: 5000, elevation: 20,
+      paddingTop: 50
+    }}>
+      <View style={{ padding: 20, backgroundColor: COLORS.primary, marginBottom: 10 }}>
+        <Text style={{ color: '#FFF', fontSize: 24, fontWeight: 'bold' }}>PVC</Text>
+        <Text style={{ color: '#FFF', fontSize: 16 }}>{agent ? agent.username : 'Guest'}</Text>
+      </View>
 
-              <TouchableOpacity style={styles.menuItem} onPress={() => navigateTo('dashboard')}>
-                <Ionicons name="home-outline" size={24} color="#333" />
-                <Text style={styles.menuText}>Home</Text>
-              </TouchableOpacity>
+      <TouchableOpacity style={styles.menuItem} onPress={() => navigateTo('dashboard')}>
+        <Ionicons name="home-outline" size={24} color="#333" />
+        <Text style={styles.menuText}>Home</Text>
+      </TouchableOpacity>
 
-              <TouchableOpacity style={styles.menuItem} onPress={() => navigateTo('users')}>
-                <Ionicons name="people-outline" size={24} color="#333" />
-                <Text style={styles.menuText}>Customer</Text>
-              </TouchableOpacity>
+      <TouchableOpacity style={styles.menuItem} onPress={() => navigateTo('users')}>
+        <Ionicons name="people-outline" size={24} color="#333" />
+        <Text style={styles.menuText}>Customer</Text>
+      </TouchableOpacity>
 
-              <TouchableOpacity style={styles.menuItem} onPress={() => navigateTo('rates')}>
-                <Ionicons name="pricetags-outline" size={24} color="#333" />
-                <Text style={styles.menuText}>Rate Master</Text>
-              </TouchableOpacity>
+      <TouchableOpacity style={styles.menuItem} onPress={() => navigateTo('rates')}>
+        <Ionicons name="pricetags-outline" size={24} color="#333" />
+        <Text style={styles.menuText}>Rate Master</Text>
+      </TouchableOpacity>
 
-              <TouchableOpacity style={styles.menuItem} onPress={() => navigateTo('prizes')}>
-                <Ionicons name="trophy-outline" size={24} color="#333" />
-                <Text style={styles.menuText}>Prize And Commission</Text>
-              </TouchableOpacity>
+      <TouchableOpacity style={styles.menuItem} onPress={() => navigateTo('prizes')}>
+        <Ionicons name="trophy-outline" size={24} color="#333" />
+        <Text style={styles.menuText}>Prize And Commission</Text>
+      </TouchableOpacity>
 
-              <TouchableOpacity style={styles.menuItem} onPress={() => navigateTo('reports')}>
-                <Ionicons name="document-text-outline" size={24} color="#333" />
-                <Text style={styles.menuText}>Reports</Text>
-              </TouchableOpacity>
+      <TouchableOpacity style={styles.menuItem} onPress={() => navigateTo('reports')}>
+        <Ionicons name="document-text-outline" size={24} color="#333" />
+        <Text style={styles.menuText}>Reports</Text>
+      </TouchableOpacity>
 
-              <TouchableOpacity style={styles.menuItem} onPress={() => navigateTo('results')}>
-                <Ionicons name="podium-outline" size={24} color="#333" />
-                <Text style={styles.menuText}>Results</Text>
-              </TouchableOpacity>
+      <TouchableOpacity style={styles.menuItem} onPress={() => navigateTo('results')}>
+        <Ionicons name="podium-outline" size={24} color="#333" />
+        <Text style={styles.menuText}>Results</Text>
+      </TouchableOpacity>
 
-              <TouchableOpacity style={[styles.menuItem, { marginTop: 20, borderTopWidth: 1, borderTopColor: '#EEE' }]} onPress={() => { setAgent(null); toggleMenu(); setCurrentView('login'); }}>
-                <Ionicons name="log-out-outline" size={24} color="red" />
-                <Text style={[styles.menuText, { color: 'red' }]}>Logout</Text>
-              </TouchableOpacity>
+      <TouchableOpacity style={[styles.menuItem, { marginTop: 20, borderTopWidth: 1, borderTopColor: '#EEE' }]} onPress={() => { setAgent(null); toggleMenu(); setCurrentView('login'); }}>
+        <Ionicons name="log-out-outline" size={24} color="red" />
+        <Text style={[styles.menuText, { color: 'red' }]}>Logout</Text>
+      </TouchableOpacity>
 
-              <TouchableOpacity
-                style={{ position: 'absolute', top: 10, right: 10 }}
-                onPress={toggleMenu}
-              >
-                <Ionicons name="close" size={30} color="#FFF" />
-              </TouchableOpacity>
-            </Animated.View>
-            );
+      <TouchableOpacity
+        style={{ position: 'absolute', top: 10, right: 10 }}
+        onPress={toggleMenu}
+      >
+        <Ionicons name="close" size={30} color="#FFF" />
+      </TouchableOpacity>
+    </Animated.View>
+  );
 
-            return (
-            <SafeAreaView style={styles.container}>
-              <StatusBar barStyle="light-content" backgroundColor={COLORS.primary} />
+  return (
+    <SafeAreaView style={styles.container}>
+      <StatusBar barStyle="light-content" backgroundColor={COLORS.primary} />
 
 
 
-              {/* Side Menu Overlay */}
-              <SideMenu />
-              {isMenuOpen && (
-                <TouchableOpacity
-                  style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(0,0,0,0.5)', zIndex: 4000 }}
-                  onPress={toggleMenu}
-                />
-              )}
+      {/* Side Menu Overlay */}
+      <SideMenu />
+      {isMenuOpen && (
+        <TouchableOpacity
+          style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(0,0,0,0.5)', zIndex: 4000 }}
+          onPress={toggleMenu}
+        />
+      )}
 
-              {/* Main Header */}
-              <View style={styles.header}>
-                <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-                  {/* Always Show Menu Icon now? Or Back arrow for sub-views? 
+      {/* Main Header */}
+      <View style={styles.header}>
+        <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+          {/* Always Show Menu Icon now? Or Back arrow for sub-views? 
               User requested Side Menu. Side Menu usually accessible from everywhere via Hamburger.
               Let's show Hamburger everywhere.
           */}
-                  <TouchableOpacity onPress={toggleMenu} style={{ marginRight: 15 }}>
-                    <Ionicons name="menu" size={28} color="#FFF" />
-                  </TouchableOpacity>
+          <TouchableOpacity onPress={toggleMenu} style={{ marginRight: 15 }}>
+            <Ionicons name="menu" size={28} color="#FFF" />
+          </TouchableOpacity>
 
-                  <Text style={{ fontSize: 20, fontWeight: 'bold', color: '#FFF' }}>
-                    {currentView === 'dashboard' ? 'Home' :
-                      currentView === 'rates' ? 'Rate Master' :
-                        currentView === 'prizes' ? 'Prize & Comm' :
-                          currentView === 'users' ? 'Customer' :
-                            currentView === 'game' ? 'Ticket Sale' : 'PVC'}
-                  </Text>
-                </View>
-                <Text style={{ fontSize: 16, fontWeight: 'bold', color: '#FFF' }}>{agent ? agent.username : ''}</Text>
-              </View>
+          <Text style={{ fontSize: 20, fontWeight: 'bold', color: '#FFF' }}>
+            {currentView === 'dashboard' ? 'Home' :
+              currentView === 'rates' ? 'Rate Master' :
+                currentView === 'prizes' ? 'Prize & Comm' :
+                  currentView === 'users' ? 'Customer' :
+                    currentView === 'game' ? 'Ticket Sale' : 'PVC'}
+          </Text>
+        </View>
+        <Text style={{ fontSize: 16, fontWeight: 'bold', color: '#FFF' }}>{agent ? agent.username : ''}</Text>
+      </View>
 
-              {/* Content Area */}
-              {currentView === 'dashboard' && renderDashboard()}
-              {currentView === 'rates' && renderRates()}
-              {currentView === 'prizes' && renderPrizes()}
+      {/* Content Area */}
+      {currentView === 'dashboard' && renderDashboard()}
+      {currentView === 'rates' && renderRates()}
+      {currentView === 'prizes' && renderPrizes()}
 
 
-              {currentView === 'game' && (
-                <View style={{ flex: 1 }}>
-                  {/* Game Stats Header (Sub-header) */}
-                  <View style={{ flexDirection: 'row', justifyContent: 'space-between', padding: 10, backgroundColor: '#E0E0E0', alignItems: 'center' }}>
-                    <View style={{ flexDirection: 'row', gap: 15 }}>
-                      <Text style={{ fontWeight: 'bold', fontSize: 16 }}>COUNT :{totalCount}</Text>
-                      <Text style={{ fontWeight: 'bold', fontSize: 16 }}>Rs : {totalRs}</Text>
-                    </View>
-                    <View style={{ flexDirection: 'row', gap: 5 }}>
-                      {[1, 2, 3].map(tab => (
+      {currentView === 'game' && (
+        <View style={{ flex: 1 }}>
+          {/* Game Stats Header (Sub-header) */}
+          <View style={{ flexDirection: 'row', justifyContent: 'space-between', padding: 10, backgroundColor: '#E0E0E0', alignItems: 'center' }}>
+            <View style={{ flexDirection: 'row', gap: 15 }}>
+              <Text style={{ fontWeight: 'bold', fontSize: 16 }}>COUNT :{totalCount}</Text>
+              <Text style={{ fontWeight: 'bold', fontSize: 16 }}>Rs : {totalRs}</Text>
+            </View>
+            <View style={{ flexDirection: 'row', gap: 5 }}>
+              {[1, 2, 3].map(tab => (
+                <TouchableOpacity
+                  key={tab}
+                  style={{
+                    width: 30, height: 30, justifyContent: 'center', alignItems: 'center',
+                    backgroundColor: currentTab === tab ? COLORS.primary : '#FFF',
+                    borderRadius: 0
+                  }}
+                  onPress={() => handleTabChange(tab)}
+                >
+                  <Text style={{ fontWeight: 'bold', color: currentTab === tab ? '#FFF' : COLORS.primary }}>{tab}</Text>
+                </TouchableOpacity>
+              ))}
+            </View>
+          </View>
+
+          <View style={styles.formContainer}>
+            {/* Game Form Content - Reused from before but wrapped */}
+
+            {/* Game/Agent Dropdowns */}
+            <View style={{ marginBottom: 10, zIndex: 1001 }}>
+              <TouchableOpacity
+                style={styles.inputWrapper}
+                onPress={() => setIsGameDropdownOpen(!isGameDropdownOpen)}
+              >
+                <Text style={[styles.inputText, { fontSize: 18, fontWeight: 'bold' }]}>
+                  {selectedGame ? (selectedGame.displayName || selectedGame.name) : '(Select Game)'}
+                </Text>
+                <Ionicons name={isGameDropdownOpen ? "caret-up" : "caret-down"} size={16} color="#666" />
+              </TouchableOpacity>
+
+
+              {isGameDropdownOpen && (
+                <View style={{
+                  position: 'absolute', top: 50, left: 0, right: 0,
+                  backgroundColor: '#FFF', borderWidth: 1, borderColor: '#CCC',
+                  borderRadius: 4, elevation: 10, padding: 5, zIndex: 2000
+                }}>
+                  <FlatList
+                    data={games}
+                    keyExtractor={item => item.id.toString()}
+                    renderItem={({ item }) => {
+                      // Helper for Name/Color
+                      const getGameDisplay = (g) => {
+                        const timeStr = new Date(g.draw_time).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: true });
+                        let displayName = g.name;
+                        let color = '#2196F3'; // Default
+
+                        // Logic to match Screenshot: D-1:00PM, K-3:00PM, etc.
+                        if (timeStr.includes('1:00') || timeStr.includes('01:00')) {
+                          displayName = 'D-1:00PM'; color = '#2962FF'; // Blue
+                        } else if (timeStr.includes('3:00') || timeStr.includes('03:00')) {
+                          displayName = 'K-3:00PM'; color = '#2E7D32'; // Green (K for 3pm)
+                        } else if (timeStr.includes('6:00') || timeStr.includes('06:00')) {
+                          displayName = 'D-6:00PM'; color = '#E91E63'; // Pink
+                        } else if (timeStr.includes('8:00') || timeStr.includes('08:00')) {
+                          displayName = 'D-8:00PM'; color = '#EF6C00'; // Orange
+                        }
+                        return { displayName, color };
+                      };
+
+                      const { displayName, color } = getGameDisplay(item);
+
+                      return (
                         <TouchableOpacity
-                          key={tab}
                           style={{
-                            width: 30, height: 30, justifyContent: 'center', alignItems: 'center',
-                            backgroundColor: currentTab === tab ? COLORS.primary : '#FFF',
-                            borderRadius: 0
+                            backgroundColor: color,
+                            paddingVertical: 15,
+                            marginBottom: 5,
+                            borderRadius: 4,
+                            alignItems: 'center',
+                            justifyContent: 'center'
                           }}
-                          onPress={() => handleTabChange(tab)}
+                          onPress={() => {
+                            // We might want to save the "displayName" to the object or just use it for display?
+                            // Let's mutate the item name for consistency in the UI if needed, 
+                            // or just rely on re-calculating (better).
+                            // Actually, let's store standard item but just Display formatted.
+                            // Use a slight hack to store display name for the main input
+                            item.displayName = displayName;
+                            setSelectedGame(item);
+                            setIsGameDropdownOpen(false);
+                          }}
                         >
-                          <Text style={{ fontWeight: 'bold', color: currentTab === tab ? '#FFF' : COLORS.primary }}>{tab}</Text>
-                        </TouchableOpacity>
-                      ))}
-                    </View>
-                  </View>
-
-                  <View style={styles.formContainer}>
-                    {/* Game Form Content - Reused from before but wrapped */}
-
-                    {/* Game/Agent Dropdowns */}
-                    <View style={{ marginBottom: 10, zIndex: 1001 }}>
-                      <TouchableOpacity
-                        style={styles.inputWrapper}
-                        onPress={() => setIsGameDropdownOpen(!isGameDropdownOpen)}
-                      >
-                        <Text style={[styles.inputText, { fontSize: 18, fontWeight: 'bold' }]}>
-                          {selectedGame ? (selectedGame.displayName || selectedGame.name) : '(Select Game)'}
-                        </Text>
-                        <Ionicons name={isGameDropdownOpen ? "caret-up" : "caret-down"} size={16} color="#666" />
-                      </TouchableOpacity>
-
-
-                      {isGameDropdownOpen && (
-                        <View style={{
-                          position: 'absolute', top: 50, left: 0, right: 0,
-                          backgroundColor: '#FFF', borderWidth: 1, borderColor: '#CCC',
-                          borderRadius: 4, elevation: 10, padding: 5, zIndex: 2000
-                        }}>
-                          <FlatList
-                            data={games}
-                            keyExtractor={item => item.id.toString()}
-                            renderItem={({ item }) => {
-                              // Helper for Name/Color
-                              const getGameDisplay = (g) => {
-                                const timeStr = new Date(g.draw_time).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: true });
-                                let displayName = g.name;
-                                let color = '#2196F3'; // Default
-
-                                // Logic to match Screenshot: D-1:00PM, K-3:00PM, etc.
-                                if (timeStr.includes('1:00') || timeStr.includes('01:00')) {
-                                  displayName = 'D-1:00PM'; color = '#2962FF'; // Blue
-                                } else if (timeStr.includes('3:00') || timeStr.includes('03:00')) {
-                                  displayName = 'K-3:00PM'; color = '#2E7D32'; // Green (K for 3pm)
-                                } else if (timeStr.includes('6:00') || timeStr.includes('06:00')) {
-                                  displayName = 'D-6:00PM'; color = '#E91E63'; // Pink
-                                } else if (timeStr.includes('8:00') || timeStr.includes('08:00')) {
-                                  displayName = 'D-8:00PM'; color = '#EF6C00'; // Orange
-                                }
-                                return { displayName, color };
-                              };
-
-                              const { displayName, color } = getGameDisplay(item);
-
-                              return (
-                                <TouchableOpacity
-                                  style={{
-                                    backgroundColor: color,
-                                    paddingVertical: 15,
-                                    marginBottom: 5,
-                                    borderRadius: 4,
-                                    alignItems: 'center',
-                                    justifyContent: 'center'
-                                  }}
-                                  onPress={() => {
-                                    // We might want to save the "displayName" to the object or just use it for display?
-                                    // Let's mutate the item name for consistency in the UI if needed, 
-                                    // or just rely on re-calculating (better).
-                                    // Actually, let's store standard item but just Display formatted.
-                                    // Use a slight hack to store display name for the main input
-                                    item.displayName = displayName;
-                                    setSelectedGame(item);
-                                    setIsGameDropdownOpen(false);
-                                  }}
-                                >
-                                  <Text style={{ fontSize: 22, color: '#FFF', fontWeight: 'bold' }}>
-                                    {displayName}
-                                  </Text>
-                                </TouchableOpacity>
-                              );
-                            }}
-                          />
-                        </View>
-                      )}
-                    </View>
-
-
-                    <View style={{ marginBottom: 10, zIndex: 1000 }}>
-                      <TouchableOpacity
-                        style={styles.inputWrapper}
-                        onPress={() => setIsAgentDropdownOpen(!isAgentDropdownOpen)}
-                      >
-                        <Text style={styles.inputText}>
-                          {selectedSubUser ? selectedSubUser.username : (agent ? agent.username : 'Loading...')}
-                        </Text>
-                        <Ionicons name={isAgentDropdownOpen ? "caret-up" : "caret-down"} size={16} color="#666" />
-                      </TouchableOpacity>
-
-                      {isAgentDropdownOpen && (
-                        <View style={{
-                          position: 'absolute', top: '100%', left: 0, right: 0,
-                          backgroundColor: '#FFF', borderWidth: 1, borderColor: '#CCC',
-                          borderRadius: 8, maxHeight: 200, elevation: 5
-                        }}>
-                          <FlatList
-                            data={subUsers}
-                            keyExtractor={item => item.id.toString()}
-                            renderItem={({ item }) => (
-                              <TouchableOpacity
-                                style={{ padding: 12, borderBottomWidth: 1, borderBottomColor: '#EEE' }}
-                                onPress={() => {
-                                  setSelectedSubUser(item);
-                                  setIsAgentDropdownOpen(false);
-                                }}
-                              >
-                                <Text style={{ fontSize: 16, color: '#333' }}>
-                                  {item.username} ({item.role}) - Bal: {item.balance}
-                                </Text>
-                              </TouchableOpacity>
-                            )}
-                          />
-                        </View>
-                      )}
-                    </View>
-
-                    {/* Checkboxes */}
-                    <View style={styles.checkboxRow}>
-                      <Checkbox label="Any" checked={checks.any} onPress={() => updateChecks('any')} />
-                      <Checkbox label="Set" checked={checks.set} onPress={() => updateChecks('set')} />
-                      <Checkbox label="100" checked={checks.c100} onPress={() => updateChecks('c100')} />
-                      <Checkbox label="111" checked={checks.c111} onPress={() => updateChecks('c111')} />
-                    </View>
-
-                    {/* Inputs */}
-                    <View style={styles.inputsRow}>
-                      {(!checks.any && !checks.c100 && !checks.c111) ? (
-                        <TouchableOpacity
-                          style={[styles.inputField, { flex: 1, marginRight: 5, borderColor: focusedField === 'number' ? COLORS.primary : '#CCC', borderWidth: focusedField === 'number' ? 2 : 1 }]}
-                          onPress={() => setFocusedField('number')}
-                        >
-                          <Text style={[styles.inputText, !number && { color: '#999' }]}>
-                            {number || `|Number (${maxNumberLength})`}
+                          <Text style={{ fontSize: 22, color: '#FFF', fontWeight: 'bold' }}>
+                            {displayName}
                           </Text>
                         </TouchableOpacity>
-                      ) : (
-                        <>
-                          <TouchableOpacity
-                            style={[styles.inputField, { flex: 1, marginRight: 5, borderColor: focusedField === 'start' ? COLORS.primary : '#CCC', borderWidth: focusedField === 'start' ? 2 : 1 }]}
-                            onPress={() => setFocusedField('start')}
-                          >
-                            <Text style={[styles.inputText, !startNumber && { color: '#999' }]}>{startNumber || 'Start'}</Text>
-                          </TouchableOpacity>
-                          <TouchableOpacity
-                            style={[styles.inputField, { flex: 1, marginRight: 5, borderColor: focusedField === 'end' ? COLORS.primary : '#CCC', borderWidth: focusedField === 'end' ? 2 : 1 }]}
-                            onPress={() => setFocusedField('end')}
-                          >
-                            <Text style={[styles.inputText, !endNumber && { color: '#999' }]}>{endNumber || 'End'}</Text>
-                          </TouchableOpacity>
-                        </>
-                      )}
-
-                      <TouchableOpacity
-                        style={[styles.inputField, { flex: 1, borderColor: focusedField === 'count' ? COLORS.primary : '#CCC', borderWidth: focusedField === 'count' ? 2 : 1 }]}
-                        onPress={() => setFocusedField('count')}
-                      >
-                        <Text style={[styles.inputText, !count && { color: '#999' }]}>{count || 'Count'}</Text>
-                      </TouchableOpacity>
-                    </View>
-
-                    {/* Action Buttons */}
-                    <View style={styles.actionRow}>
-                      <ActionButton label={`D-${btnLabels.A}-1`} color={COLORS.btnGreen} onPress={() => handleAddTicket(btnLabels.A)} />
-                      <ActionButton label={`D-${btnLabels.B}-1`} color={COLORS.btnPink} onPress={() => handleAddTicket(btnLabels.B)} />
-                      {btnLabels.C && <ActionButton label={`D-${btnLabels.C}-1`} color={COLORS.btnOrange} onPress={() => handleAddTicket(btnLabels.C)} />}
-                      <ActionButton label={btnLabels.All} color={COLORS.btnRed} onPress={() => handleAddTicket('ALL')} />
-                    </View>
-
-                    <View style={styles.listContainer}>
-                      <FlatList
-                        data={tickets}
-                        renderItem={renderTicketItem}
-                        keyExtractor={item => item.id}
-                        contentContainerStyle={{ paddingBottom: 10 }}
-                      />
-                    </View>
-
-                    <CustomKeypad
-                      onKeyPress={handleKeyPress}
-                      onSave={handleSave}
-                      onClear={handleClear}
-                      onWhatsapp={() => alert('Open Whatsapp')}
-                    />
-                  </View>
-                </View>
-              )}
-
-              {/* VIEW: USER MANAGEMENT */}
-              {currentView === 'users' && (
-                <View style={styles.formContainer}>
-                  <Text style={{ fontSize: 20, fontWeight: 'bold', marginBottom: 20, color: COLORS.primary }}>
-                    Create Sub-User
-                  </Text>
-
-                  <Text style={{ marginBottom: 5 }}>New Username:</Text>
-                  <TextInput
-                    style={styles.inputField}
-                    value={newUsername} onChangeText={setNewUsername}
-                    placeholder="Username" autoCapitalize="none"
-                  />
-
-                  <Text style={{ marginBottom: 5, marginTop: 10 }}>New Password:</Text>
-                  <TextInput
-                    style={styles.inputField}
-                    value={newPassword} onChangeText={setNewPassword}
-                    placeholder="Password"
-                  />
-
-                  <Text style={{ marginBottom: 5, marginTop: 10 }}>Initial Balance:</Text>
-                  <TextInput
-                    style={styles.inputField}
-                    value={newBalance} onChangeText={setNewBalance}
-                    placeholder="0.00" keyboardType="numeric"
-                  />
-
-                  <TouchableOpacity
-                    style={{
-                      backgroundColor: COLORS.btnGreen, padding: 15, borderRadius: 5,
-                      marginTop: 20, alignItems: 'center'
-                    }}
-                    onPress={async () => {
-                      if (!newUsername || !newPassword) { alert('Fill all fields'); return; }
-
-                      const { data, error } = await ticketService.createUser(
-                        agent, newUsername.trim(), newPassword.trim(), newBalance
                       );
-
-                      if (error) alert('Error: ' + error);
-                      else {
-                        alert(`Success! Created User: ${data.username} (${data.role})`);
-                        setNewUsername(''); setNewPassword(''); setNewBalance('');
-                      }
                     }}
-                  >
-                    <Text style={{ color: '#FFF', fontWeight: 'bold' }}>CREATE USER</Text>
-                  </TouchableOpacity>
-
-                  <View style={{ marginTop: 20, borderTopWidth: 1, borderTopColor: '#CCC', paddingTop: 20 }}>
-                    <TouchableOpacity
-                      style={[styles.actionButton, { backgroundColor: COLORS.secondary }]}
-                      onPress={() => { setCurrentView('rates'); loadRates(); }}
-                    >
-                      <Text style={[styles.actionButtonText, { textAlign: 'center' }]}>My Rates (Rate Master)</Text>
-                    </TouchableOpacity>
-                  </View>
-                </View>
-              )}
-
-              {currentView === 'results' && (
-                <View style={styles.formContainer}>
-                  <Text style={{ fontSize: 20, fontWeight: 'bold', marginBottom: 20, color: COLORS.btnOrange }}>
-                    Declare Daily Result
-                  </Text>
-
-                  <Text style={{ marginBottom: 10 }}>Select Game:</Text>
-                  <View style={styles.inputWrapper}>
-                    <Text style={styles.inputText}>{selectedGame ? selectedGame.name : 'Loading...'}</Text>
-                  </View>
-
-                  <Text style={{ marginBottom: 10, marginTop: 10 }}>Winning Number (3 Digits):</Text>
-                  <TextInput
-                    style={[styles.inputField, { fontSize: 24, textAlign: 'center', letterSpacing: 5 }]}
-                    value={resultInput} onChangeText={setResultInput}
-                    placeholder="---" maxLength={3} keyboardType="numeric"
                   />
+                </View>
+              )}
+            </View>
 
+
+            <View style={{ marginBottom: 10, zIndex: 1000 }}>
+              <TouchableOpacity
+                style={styles.inputWrapper}
+                onPress={() => setIsAgentDropdownOpen(!isAgentDropdownOpen)}
+              >
+                <Text style={styles.inputText}>
+                  {selectedSubUser ? selectedSubUser.username : (agent ? agent.username : 'Loading...')}
+                </Text>
+                <Ionicons name={isAgentDropdownOpen ? "caret-up" : "caret-down"} size={16} color="#666" />
+              </TouchableOpacity>
+
+              {isAgentDropdownOpen && (
+                <View style={{
+                  position: 'absolute', top: '100%', left: 0, right: 0,
+                  backgroundColor: '#FFF', borderWidth: 1, borderColor: '#CCC',
+                  borderRadius: 8, maxHeight: 200, elevation: 5
+                }}>
+                  <FlatList
+                    data={subUsers}
+                    keyExtractor={item => item.id.toString()}
+                    renderItem={({ item }) => (
+                      <TouchableOpacity
+                        style={{ padding: 12, borderBottomWidth: 1, borderBottomColor: '#EEE' }}
+                        onPress={() => {
+                          setSelectedSubUser(item);
+                          setIsAgentDropdownOpen(false);
+                        }}
+                      >
+                        <Text style={{ fontSize: 16, color: '#333' }}>
+                          {item.username} ({item.role}) - Bal: {item.balance}
+                        </Text>
+                      </TouchableOpacity>
+                    )}
+                  />
+                </View>
+              )}
+            </View>
+
+            {/* Checkboxes */}
+            <View style={styles.checkboxRow}>
+              <Checkbox label="Any" checked={checks.any} onPress={() => updateChecks('any')} />
+              <Checkbox label="Set" checked={checks.set} onPress={() => updateChecks('set')} />
+              <Checkbox label="100" checked={checks.c100} onPress={() => updateChecks('c100')} />
+              <Checkbox label="111" checked={checks.c111} onPress={() => updateChecks('c111')} />
+            </View>
+
+            {/* Inputs */}
+            <View style={styles.inputsRow}>
+              {(!checks.any && !checks.c100 && !checks.c111) ? (
+                <TouchableOpacity
+                  style={[styles.inputField, { flex: 1, marginRight: 5, borderColor: focusedField === 'number' ? COLORS.primary : '#CCC', borderWidth: focusedField === 'number' ? 2 : 1 }]}
+                  onPress={() => setFocusedField('number')}
+                >
+                  <Text style={[styles.inputText, !number && { color: '#999' }]}>
+                    {number || `|Number (${maxNumberLength})`}
+                  </Text>
+                </TouchableOpacity>
+              ) : (
+                <>
                   <TouchableOpacity
-                    style={{
-                      backgroundColor: COLORS.btnRed, padding: 15, borderRadius: 5,
-                      marginTop: 30, alignItems: 'center'
-                    }}
-                    onPress={async () => {
-                      if (resultInput.length !== 3) { alert('Enter 3 digits'); return; }
-
-                      const { data, error } = await ticketService.declareResult(selectedGame.id, resultInput);
-
-                      if (error) alert('Error: ' + error);
-                      else {
-                        alert(`Result Declared: ${resultInput}\nWinnings Calculated!`);
-                        setResultInput('');
-                      }
-                    }}
+                    style={[styles.inputField, { flex: 1, marginRight: 5, borderColor: focusedField === 'start' ? COLORS.primary : '#CCC', borderWidth: focusedField === 'start' ? 2 : 1 }]}
+                    onPress={() => setFocusedField('start')}
                   >
-                    <Text style={{ color: '#FFF', fontWeight: 'bold', fontSize: 18 }}>DECLARE & CALCULATE</Text>
+                    <Text style={[styles.inputText, !startNumber && { color: '#999' }]}>{startNumber || 'Start'}</Text>
                   </TouchableOpacity>
-                </View>
+                  <TouchableOpacity
+                    style={[styles.inputField, { flex: 1, marginRight: 5, borderColor: focusedField === 'end' ? COLORS.primary : '#CCC', borderWidth: focusedField === 'end' ? 2 : 1 }]}
+                    onPress={() => setFocusedField('end')}
+                  >
+                    <Text style={[styles.inputText, !endNumber && { color: '#999' }]}>{endNumber || 'End'}</Text>
+                  </TouchableOpacity>
+                </>
               )}
 
-              {currentView === 'reports' && (
-                <View style={[styles.formContainer, { alignItems: 'center', justifyContent: 'center' }]}>
-                  <Ionicons name="construct-outline" size={64} color="#999" />
-                  <Text style={{ marginTop: 20, fontSize: 18, color: '#666' }}>Reports Coming Soon</Text>
-                </View>
-              )}
+              <TouchableOpacity
+                style={[styles.inputField, { flex: 1, borderColor: focusedField === 'count' ? COLORS.primary : '#CCC', borderWidth: focusedField === 'count' ? 2 : 1 }]}
+                onPress={() => setFocusedField('count')}
+              >
+                <Text style={[styles.inputText, !count && { color: '#999' }]}>{count || 'Count'}</Text>
+              </TouchableOpacity>
+            </View>
 
-            </SafeAreaView>
-            );
+            {/* Action Buttons */}
+            <View style={styles.actionRow}>
+              <ActionButton label={`D-${btnLabels.A}-1`} color={COLORS.btnGreen} onPress={() => handleAddTicket(btnLabels.A)} />
+              <ActionButton label={`D-${btnLabels.B}-1`} color={COLORS.btnPink} onPress={() => handleAddTicket(btnLabels.B)} />
+              {btnLabels.C && <ActionButton label={`D-${btnLabels.C}-1`} color={COLORS.btnOrange} onPress={() => handleAddTicket(btnLabels.C)} />}
+              <ActionButton label={btnLabels.All} color={COLORS.btnRed} onPress={() => handleAddTicket('ALL')} />
+            </View>
+
+            <View style={styles.listContainer}>
+              <FlatList
+                data={tickets}
+                renderItem={renderTicketItem}
+                keyExtractor={item => item.id}
+                contentContainerStyle={{ paddingBottom: 10 }}
+              />
+            </View>
+
+            <CustomKeypad
+              onKeyPress={handleKeyPress}
+              onSave={handleSave}
+              onClear={handleClear}
+              onWhatsapp={() => alert('Open Whatsapp')}
+            />
+          </View>
+        </View>
+      )}
+
+      {/* VIEW: USER MANAGEMENT */}
+      {currentView === 'users' && (
+        <View style={styles.formContainer}>
+          <Text style={{ fontSize: 20, fontWeight: 'bold', marginBottom: 20, color: COLORS.primary }}>
+            Create Sub-User
+          </Text>
+
+          <Text style={{ marginBottom: 5 }}>New Username:</Text>
+          <TextInput
+            style={styles.inputField}
+            value={newUsername} onChangeText={setNewUsername}
+            placeholder="Username" autoCapitalize="none"
+          />
+
+          <Text style={{ marginBottom: 5, marginTop: 10 }}>New Password:</Text>
+          <TextInput
+            style={styles.inputField}
+            value={newPassword} onChangeText={setNewPassword}
+            placeholder="Password"
+          />
+
+          <Text style={{ marginBottom: 5, marginTop: 10 }}>Initial Balance:</Text>
+          <TextInput
+            style={styles.inputField}
+            value={newBalance} onChangeText={setNewBalance}
+            placeholder="0.00" keyboardType="numeric"
+          />
+
+          <TouchableOpacity
+            style={{
+              backgroundColor: COLORS.btnGreen, padding: 15, borderRadius: 5,
+              marginTop: 20, alignItems: 'center'
+            }}
+            onPress={async () => {
+              if (!newUsername || !newPassword) { alert('Fill all fields'); return; }
+
+              const { data, error } = await ticketService.createUser(
+                agent, newUsername.trim(), newPassword.trim(), newBalance
+              );
+
+              if (error) alert('Error: ' + error);
+              else {
+                alert(`Success! Created User: ${data.username} (${data.role})`);
+                setNewUsername(''); setNewPassword(''); setNewBalance('');
+              }
+            }}
+          >
+            <Text style={{ color: '#FFF', fontWeight: 'bold' }}>CREATE USER</Text>
+          </TouchableOpacity>
+
+          <View style={{ marginTop: 20, borderTopWidth: 1, borderTopColor: '#CCC', paddingTop: 20 }}>
+            <TouchableOpacity
+              style={[styles.actionButton, { backgroundColor: COLORS.secondary }]}
+              onPress={() => { setCurrentView('rates'); loadRates(); }}
+            >
+              <Text style={[styles.actionButtonText, { textAlign: 'center' }]}>My Rates (Rate Master)</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      )}
+
+      {currentView === 'results' && (
+        <View style={styles.formContainer}>
+          <Text style={{ fontSize: 20, fontWeight: 'bold', marginBottom: 20, color: COLORS.btnOrange }}>
+            Declare Daily Result
+          </Text>
+
+          <Text style={{ marginBottom: 10 }}>Select Game:</Text>
+          <View style={styles.inputWrapper}>
+            <Text style={styles.inputText}>{selectedGame ? selectedGame.name : 'Loading...'}</Text>
+          </View>
+
+          <Text style={{ marginBottom: 10, marginTop: 10 }}>Winning Number (3 Digits):</Text>
+          <TextInput
+            style={[styles.inputField, { fontSize: 24, textAlign: 'center', letterSpacing: 5 }]}
+            value={resultInput} onChangeText={setResultInput}
+            placeholder="---" maxLength={3} keyboardType="numeric"
+          />
+
+          <TouchableOpacity
+            style={{
+              backgroundColor: COLORS.btnRed, padding: 15, borderRadius: 5,
+              marginTop: 30, alignItems: 'center'
+            }}
+            onPress={async () => {
+              if (resultInput.length !== 3) { alert('Enter 3 digits'); return; }
+
+              const { data, error } = await ticketService.declareResult(selectedGame.id, resultInput);
+
+              if (error) alert('Error: ' + error);
+              else {
+                alert(`Result Declared: ${resultInput}\nWinnings Calculated!`);
+                setResultInput('');
+              }
+            }}
+          >
+            <Text style={{ color: '#FFF', fontWeight: 'bold', fontSize: 18 }}>DECLARE & CALCULATE</Text>
+          </TouchableOpacity>
+        </View>
+      )}
+
+      {currentView === 'reports' && (
+        <View style={[styles.formContainer, { alignItems: 'center', justifyContent: 'center' }]}>
+          <Ionicons name="construct-outline" size={64} color="#999" />
+          <Text style={{ marginTop: 20, fontSize: 18, color: '#666' }}>Reports Coming Soon</Text>
+        </View>
+      )}
+
+    </SafeAreaView>
+  );
 }
 
-            const Checkbox = ({label, checked, onPress}) => (
-            <TouchableOpacity onPress={onPress} style={{ flexDirection: 'row', alignItems: 'center', marginRight: 15 }}>
-              <View style={{
-                width: 20, height: 20, borderWidth: 1, borderColor: '#666', marginRight: 5,
-                backgroundColor: checked ? COLORS.primary : 'transparent',
-                justifyContent: 'center', alignItems: 'center'
-              }}>
-                {checked && <Ionicons name="checkmark" size={14} color="#FFF" />}
-              </View>
-              <Text style={{ fontWeight: 'bold' }}>{label}</Text>
-            </TouchableOpacity>
-            );
+const Checkbox = ({ label, checked, onPress }) => (
+  <TouchableOpacity onPress={onPress} style={{ flexDirection: 'row', alignItems: 'center', marginRight: 15 }}>
+    <View style={{
+      width: 20, height: 20, borderWidth: 1, borderColor: '#666', marginRight: 5,
+      backgroundColor: checked ? COLORS.primary : 'transparent',
+      justifyContent: 'center', alignItems: 'center'
+    }}>
+      {checked && <Ionicons name="checkmark" size={14} color="#FFF" />}
+    </View>
+    <Text style={{ fontWeight: 'bold' }}>{label}</Text>
+  </TouchableOpacity>
+);
 
-            const ActionButton = ({label, color, onPress}) => (
-            <TouchableOpacity
-              style={[styles.actionBtn, { backgroundColor: color }]}
-              onPress={onPress}
-            >
-              <Text style={styles.actionBtnText}>{label}</Text>
-            </TouchableOpacity>
-            );
+const ActionButton = ({ label, color, onPress }) => (
+  <TouchableOpacity
+    style={[styles.actionBtn, { backgroundColor: color }]}
+    onPress={onPress}
+  >
+    <Text style={styles.actionBtnText}>{label}</Text>
+  </TouchableOpacity>
+);
 
-            const styles = StyleSheet.create({
-              container: {
-              flex: 1,
-            backgroundColor: COLORS.background,
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+    backgroundColor: COLORS.background,
   },
-            header: {
-              flexDirection: 'row',
-            justifyContent: 'space-between',
-            alignItems: 'center',
-            padding: 10,
-            backgroundColor: COLORS.primary, // Blue Header
-            paddingTop: StatusBar.currentHeight ? StatusBar.currentHeight + 10 : 10,
-            height: 70, // Slightly shorter
-            elevation: 4
+  header: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    padding: 10,
+    backgroundColor: COLORS.primary, // Blue Header
+    paddingTop: StatusBar.currentHeight ? StatusBar.currentHeight + 10 : 10,
+    height: 70, // Slightly shorter
+    elevation: 4
   },
-            statLabel: {
-              fontSize: 16,
-            fontWeight: 'bold',
-            color: '#FFF', // White text on blue header
+  statLabel: {
+    fontSize: 16,
+    fontWeight: 'bold',
+    color: '#FFF', // White text on blue header
   },
-            tabsContainer: {
-              flexDirection: 'row',
+  tabsContainer: {
+    flexDirection: 'row',
   },
-            tab: {
-              paddingVertical: 6,
-            paddingHorizontal: 16,
-            backgroundColor: '#FFF',
-            marginLeft: 8,
-            borderRadius: 4, // More square
-            borderWidth: 0,
-            elevation: 2
+  tab: {
+    paddingVertical: 6,
+    paddingHorizontal: 16,
+    backgroundColor: '#FFF',
+    marginLeft: 8,
+    borderRadius: 4, // More square
+    borderWidth: 0,
+    elevation: 2
   },
-            activeTab: {
-              backgroundColor: COLORS.btnOrange, // Orange active tab maybe? Or just Blue
-            borderWidth: 2,
-            borderColor: '#FFF'
+  activeTab: {
+    backgroundColor: COLORS.btnOrange, // Orange active tab maybe? Or just Blue
+    borderWidth: 2,
+    borderColor: '#FFF'
   },
-            tabText: {
-              color: COLORS.primary,
-            fontWeight: 'bold',
+  tabText: {
+    color: COLORS.primary,
+    fontWeight: 'bold',
   },
-            activeTabText: {
-              color: COLORS.primary,
-            fontWeight: 'bold',
+  activeTabText: {
+    color: COLORS.primary,
+    fontWeight: 'bold',
   },
-            formContainer: {
-              flex: 1,
-            padding: 10,
-            backgroundColor: '#F0F0F0', // Light Grey background
+  formContainer: {
+    flex: 1,
+    padding: 10,
+    backgroundColor: '#F0F0F0', // Light Grey background
   },
-            inputWrapper: {
-              backgroundColor: COLORS.surface,
-            borderWidth: 1,
-            borderColor: COLORS.border,
-            borderRadius: 8,
-            padding: 12,
-            marginBottom: 10,
-            flexDirection: 'row',
-            justifyContent: 'space-between',
-            alignItems: 'center'
+  inputWrapper: {
+    backgroundColor: COLORS.surface,
+    borderWidth: 1,
+    borderColor: COLORS.border,
+    borderRadius: 8,
+    padding: 12,
+    marginBottom: 10,
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center'
   },
-            inputText: {
-              fontSize: 16,
-            color: COLORS.textPrimary,
-            fontWeight: '500'
+  inputText: {
+    fontSize: 16,
+    color: COLORS.textPrimary,
+    fontWeight: '500'
   },
-            checkboxRow: {
-              flexDirection: 'row',
-            marginBottom: 15,
-            justifyContent: 'space-around'
+  checkboxRow: {
+    flexDirection: 'row',
+    marginBottom: 15,
+    justifyContent: 'space-around'
   },
-            inputsRow: {
-              flexDirection: 'row',
-            marginBottom: 15,
-            gap: 10
+  inputsRow: {
+    flexDirection: 'row',
+    marginBottom: 15,
+    gap: 10
   },
-            inputField: {
-              backgroundColor: COLORS.surface,
-            borderWidth: 1,
-            borderColor: COLORS.border,
-            borderRadius: 8,
-            padding: 12,
-            fontSize: 18,
-            color: COLORS.textPrimary,
-            justifyContent: 'center'
+  inputField: {
+    backgroundColor: COLORS.surface,
+    borderWidth: 1,
+    borderColor: COLORS.border,
+    borderRadius: 8,
+    padding: 12,
+    fontSize: 18,
+    color: COLORS.textPrimary,
+    justifyContent: 'center'
   },
-            actionRow: {
-              flexDirection: 'row',
-            justifyContent: 'space-between',
-            marginBottom: 10
+  actionRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    marginBottom: 10
   },
-            actionBtn: {
-              flex: 1,
-            paddingVertical: 14,
-            marginHorizontal: 3,
-            alignItems: 'center',
-            borderRadius: 8,
-            elevation: 2
+  actionBtn: {
+    flex: 1,
+    paddingVertical: 14,
+    marginHorizontal: 3,
+    alignItems: 'center',
+    borderRadius: 8,
+    elevation: 2
   },
-            actionBtnText: {
-              color: COLORS.white,
-            fontWeight: 'bold',
-            fontSize: 15,
+  actionBtnText: {
+    color: COLORS.white,
+    fontWeight: 'bold',
+    fontSize: 15,
   },
-            listContainer: {
-              flex: 1,
-            backgroundColor: COLORS.surface,
-            borderRadius: 10,
-            padding: 5,
-            marginBottom: 5,
-            borderWidth: 1,
-            borderColor: COLORS.border
+  listContainer: {
+    flex: 1,
+    backgroundColor: COLORS.surface,
+    borderRadius: 10,
+    padding: 5,
+    marginBottom: 5,
+    borderWidth: 1,
+    borderColor: COLORS.border
   },
-            ticketRow: {
-              flexDirection: 'row',
-            paddingVertical: 12,
-            borderBottomWidth: 1,
-            borderBottomColor: COLORS.border,
-            alignItems: 'center',
-            paddingHorizontal: 5
+  ticketRow: {
+    flexDirection: 'row',
+    paddingVertical: 12,
+    borderBottomWidth: 1,
+    borderBottomColor: COLORS.border,
+    alignItems: 'center',
+    paddingHorizontal: 5
   },
-            ticketText: {
-              fontSize: 16,
-            fontWeight: '600',
-            color: COLORS.textPrimary
+  ticketText: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: COLORS.textPrimary
   },
-            dashboardBtnBlue: {
-              backgroundColor: '#0D47A1', // Deep Blue
-            padding: 15,
-            borderRadius: 10,
-            elevation: 3,
-            marginBottom: 5
+  dashboardBtnBlue: {
+    backgroundColor: '#0D47A1', // Deep Blue
+    padding: 15,
+    borderRadius: 10,
+    elevation: 3,
+    marginBottom: 5
   },
-            dashboardBtnLightBlue: {
-              backgroundColor: '#1976D2', // Medium Blue
-            padding: 15,
-            borderRadius: 10,
-            elevation: 3,
-            marginBottom: 5
+  dashboardBtnLightBlue: {
+    backgroundColor: '#1976D2', // Medium Blue
+    padding: 15,
+    borderRadius: 10,
+    elevation: 3,
+    marginBottom: 5
   },
-            dashboardBtnSkyBlue: {
-              backgroundColor: '#2196F3', // Light Blue
-            padding: 15,
-            borderRadius: 10,
-            elevation: 3,
-            marginBottom: 5
+  dashboardBtnSkyBlue: {
+    backgroundColor: '#2196F3', // Light Blue
+    padding: 15,
+    borderRadius: 10,
+    elevation: 3,
+    marginBottom: 5
   },
-            dashboardBtnText: {
-              alignItems: 'center',
-            padding: 15,
-            borderBottomWidth: 1,
-            borderBottomColor: '#F5F5F5'
+  dashboardBtnText: {
+    alignItems: 'center',
+    padding: 15,
+    borderBottomWidth: 1,
+    borderBottomColor: '#F5F5F5'
   },
-            menuText: {
-              fontSize: 18,
-            marginLeft: 20,
-            color: '#333'
+  menuText: {
+    fontSize: 18,
+    marginLeft: 20,
+    color: '#333'
   }
 });
