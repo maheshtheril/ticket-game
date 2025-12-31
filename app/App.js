@@ -645,6 +645,54 @@ export default function App() {
     </View>
   );
 
+  const renderPrizes = () => {
+    const prizeData = [
+      { name: 'First', rate: '5000', super: '400' },
+      { name: 'Second', rate: '500', super: '50' },
+      { name: 'Third', rate: '250', super: '30' },
+      { name: 'Fourt', rate: '100', super: '20' },
+      { name: 'Five', rate: '50', super: '20' },
+      { name: 'Guarantee (Six)', rate: '20', super: '10' },
+      { name: 'Box First Price', rate: '3000', super: '300' },
+      { name: 'Box Series', rate: '800', super: '30' },
+      { name: 'Single(1)', rate: '100', super: '0' },
+      { name: 'Double(2)', rate: '700', super: '30' },
+    ];
+
+    return (
+      <View style={{ flex: 1, padding: 20 }}>
+        {/* Header */}
+        <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 15 }}>
+          <TouchableOpacity onPress={() => setCurrentView('dashboard')}>
+            <Ionicons name="arrow-back" size={24} color="#333" />
+          </TouchableOpacity>
+          <Text style={{ fontSize: 20, fontWeight: 'bold', marginLeft: 10, color: '#333' }}>Prize And Commission</Text>
+        </View>
+
+        {/* Table Header */}
+        <View style={{ flexDirection: 'row', backgroundColor: '#9E9E9E', padding: 10 }}>
+          <Text style={{ flex: 2, color: '#FFF', fontWeight: 'bold' }}>Prize</Text>
+          <Text style={{ flex: 1, color: '#FFF', fontWeight: 'bold' }}>Rate</Text>
+          <Text style={{ flex: 1, color: '#FFF', fontWeight: 'bold' }}>Super</Text>
+        </View>
+
+        <View style={{ flex: 1 }}>
+          <FlatList
+            data={prizeData}
+            keyExtractor={(item, index) => index.toString()}
+            renderItem={({ item }) => (
+              <View style={{ flexDirection: 'row', padding: 15, borderBottomWidth: 1, borderBottomColor: '#EEE', backgroundColor: '#FFF' }}>
+                <Text style={{ flex: 2, color: '#333', fontWeight: 'bold' }}>{item.name}</Text>
+                <Text style={{ flex: 1, color: '#333' }}>{item.rate}</Text>
+                <Text style={{ flex: 1, color: '#333' }}>{item.super}</Text>
+              </View>
+            )}
+          />
+        </View>
+      </View>
+    );
+  };
+
   const SideMenu = () => (
     <Animated.View style={{
       position: 'absolute', top: 0, bottom: 0, left: menuAnim, width: 300,
