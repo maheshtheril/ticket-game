@@ -11,7 +11,7 @@ import {
   TextInput
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { Ionicons } from '@expo/vector-icons';
+
 import CustomKeypad from './components/CustomKeypad';
 import { COLORS } from './constants/theme';
 import { ticketService } from './services/ticketService'; // Using the real service now
