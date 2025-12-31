@@ -28,7 +28,12 @@ export default function App() {
   const [currentView, setCurrentView] = useState('game'); // 'game' or 'users'
   const [newUsername, setNewUsername] = useState('');
   const [newPassword, setNewPassword] = useState('');
+  const [newUsername, setNewUsername] = useState('');
+  const [newPassword, setNewPassword] = useState('');
   const [newBalance, setNewBalance] = useState('');
+
+  // Results State
+  const [resultInput, setResultInput] = useState('');
 
   // Input States
   const [number, setNumber] = useState('');
@@ -381,13 +386,36 @@ export default function App() {
         </View>
 
         {/* User Management Button */}
-        {agent && agent.role !== 'user' && ( // Only if role can create users
+        {/* User Management & Results Button (Admin Only) */}
+        {agent && agent.role === 'admin' && ( // Only Admin can declare results
+          <View style={{ flexDirection: 'row' }}>
+            <TouchableOpacity
+              style={{ backgroundColor: COLORS.primary, padding: 8, borderRadius: 5, marginRight: 5 }}
+              onPress={() => setCurrentView(currentView === 'users' ? 'game' : 'users')}
+            >
+              <Text style={{ color: '#FFF', fontWeight: 'bold' }}>
+                {currentView === 'users' ? 'GAME' : 'USERS'}
+              </Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              style={{ backgroundColor: COLORS.btnOrange, padding: 8, borderRadius: 5, marginRight: 10 }}
+              onPress={() => setCurrentView(currentView === 'results' ? 'game' : 'results')}
+            >
+              <Text style={{ color: '#FFF', fontWeight: 'bold' }}>
+                {currentView === 'results' ? 'GAME' : 'RESULT'}
+              </Text>
+            </TouchableOpacity>
+          </View>
+        )}
+
+        {agent && agent.role !== 'admin' && agent.role !== 'user' && ( // Agents can create sub-users
           <TouchableOpacity
             style={{ backgroundColor: COLORS.primary, padding: 8, borderRadius: 5, marginRight: 10 }}
-            onPress={() => setCurrentView(currentView === 'game' ? 'users' : 'game')}
+            onPress={() => setCurrentView(currentView === 'users' ? 'game' : 'users')}
           >
             <Text style={{ color: '#FFF', fontWeight: 'bold' }}>
-              {currentView === 'game' ? 'MANAGE USERS' : 'PLAY GAME'}
+              {currentView === 'users' ? 'GAME' : 'USERS'}
             </Text>
           </TouchableOpacity>
         )}
@@ -457,6 +485,45 @@ export default function App() {
             }}
           >
             <Text style={{ color: '#FFF', fontWeight: 'bold' }}>CREATE USER</Text>
+          </TouchableOpacity>
+        </View>
+      ) : currentView === 'results' ? (
+        /* VIEW: DECLARE RESULTS (ADMIN) */
+        <View style={styles.formContainer}>
+          <Text style={{ fontSize: 20, fontWeight: 'bold', marginBottom: 20, color: COLORS.btnOrange }}>
+            Declare Daily Result
+          </Text>
+
+          <Text style={{ marginBottom: 10 }}>Select Game:</Text>
+          <View style={styles.inputWrapper}>
+            <Text style={styles.inputText}>{selectedGame ? selectedGame.name : 'Loading...'}</Text>
+          </View>
+
+          <Text style={{ marginBottom: 10, marginTop: 10 }}>Winning Number (3 Digits):</Text>
+          <TextInput
+            style={[styles.inputField, { fontSize: 24, textAlign: 'center', letterSpacing: 5 }]}
+            value={resultInput} onChangeText={setResultInput}
+            placeholder="---" maxLength={3} keyboardType="numeric"
+          />
+
+          <TouchableOpacity
+            style={{
+              backgroundColor: COLORS.btnRed, padding: 15, borderRadius: 5,
+              marginTop: 30, alignItems: 'center'
+            }}
+            onPress={async () => {
+              if (resultInput.length !== 3) { alert('Enter 3 digits'); return; }
+
+              const { data, error } = await ticketService.declareResult(selectedGame.id, resultInput);
+
+              if (error) alert('Error: ' + error);
+              else {
+                alert(`Result Declared: ${resultInput}\nWinnings Calculated!`);
+                setResultInput('');
+              }
+            }}
+          >
+            <Text style={{ color: '#FFF', fontWeight: 'bold', fontSize: 18 }}>DECLARE & CALCULATE</Text>
           </TouchableOpacity>
         </View>
       ) : (

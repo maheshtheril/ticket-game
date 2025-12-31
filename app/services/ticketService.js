@@ -225,13 +225,107 @@ export const ticketService = {
             return { data: null, error: err };
         }
     }
+    // 5. Declare Result (Admin)
+    async declareResult(gameId, resultNumber) {
+        const today = new Date().toISOString().split('T')[0];
+        try {
+            // Update Daily Draw
+            const { data: draw, error } = await supabase
+                .from('daily_draws')
+                .update({
+                    result_number: resultNumber,
+                    is_declared: true,
+                    declared_at: new Date()
+                })
+                .eq('schedule_id', gameId)
+                .eq('draw_date', today)
+                .select()
+                .single();
+
+            if (error) throw error;
+            if (!draw) return { error: 'No draw found for today to declare.' };
+
+            // Trigger Calculation
+            await this.calculateWinnings(draw.id, resultNumber);
+
+            return { data: draw, error: null };
+        } catch (err) {
+            return { error: err.message };
+        }
+    },
+
+    // 6. Calculate Winnings (Batch Job Logic)
+    async calculateWinnings(drawId, resultNumber) {
+        // Fetch All Active Tickets for Draw
+        const { data: tickets } = await supabase
+            .from('tickets')
+            .select('*')
+            .eq('draw_id', drawId)
+            .eq('status', 'active');
+
+        if (!tickets || tickets.length === 0) return;
+
+        const updates = [];
+
+        // Define Winnings Table (Simplified for MVP, ideally fetched from DB)
+        // 1st Prize (Straight) = 5000
+        // 1st Prize (Box) = 3000
+
+        for (const t of tickets) {
+            let isWinner = false;
+            let winAmount = 0;
+            let commission = 0;
+
+            if (t.ticket_type === 'triple_straight') {
+                if (t.ticket_number === resultNumber) {
+                    isWinner = true;
+                    winAmount = 5000 * t.count;
+                    commission = 400 * t.count;
+                }
+            } else if (t.ticket_type === 'triple_box') {
+                // Check Permutation
+                if (checkPermutation(t.ticket_number, resultNumber)) {
+                    isWinner = true;
+                    winAmount = 3000 * t.count;
+                    commission = 200 * t.count;
+                }
+            }
+            // Add other rules (Single/Double/2nd Prize etc later)
+
+            if (isWinner) {
+                updates.push({
+                    id: t.id,
+                    status: 'won',
+                    winning_amount: winAmount,
+                    winning_tax_commission: commission
+                });
+            } else {
+                updates.push({
+                    id: t.id,
+                    status: 'lost'
+                });
+            }
+        }
+
+        // Batch Update (Supabase doesn't support bulk update easily via client, so loop or RPC)
+        // For MVP/Demo: Loop update (Not performant for 10k tickets, but ok for demo)
+        for (const update of updates) {
+            await supabase.from('tickets').update(update).eq('id', update.id);
+        }
+    }
 };
 
 // Helper to map UI types to DB Enum
 function mapTypeToEnum(uiType) {
-    if (uiType === 'SUPER') return 'triple_straight'; // Adjusted mapping for V3
+    if (uiType === 'SUPER') return 'triple_straight';
     if (uiType === 'BOX') return 'triple_box';
     if (uiType === 'AB' || uiType === 'AC' || uiType === 'BC') return 'double';
     if (uiType === 'A' || uiType === 'B' || uiType === 'C') return 'single';
-    return 'single'; // Fallback
+    return 'single';
+}
+
+// Helper: Check Permutation (ABC == CBA)
+function checkPermutation(str1, str2) {
+    if (str1.length !== str2.length) return false;
+    return str1.split('').sort().join('') === str2.split('').sort().join('');
 }
