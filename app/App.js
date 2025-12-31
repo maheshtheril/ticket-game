@@ -66,6 +66,8 @@ export default function App() {
   });
 
   const [rates, setRates] = useState({}); // Store user rates
+  const [isMenuOpen, setIsMenuOpen] = useState(false); // Side Menu State
+  const [menuAnim] = useState(new Animated.Value(-300)); // Slide animation
 
   // Load Games (Real)
 
@@ -346,6 +348,21 @@ export default function App() {
     else setFocusedField('number');
   };
 
+  const toggleMenu = () => {
+    const toValue = isMenuOpen ? -300 : 0;
+    setIsMenuOpen(!isMenuOpen);
+    Animated.timing(menuAnim, {
+      toValue,
+      duration: 300,
+      useNativeDriver: false, // width/left layout changes
+    }).start();
+  };
+
+  const navigateTo = (view) => {
+    setCurrentView(view);
+    toggleMenu(); // Close menu
+  };
+
   // Helper to get color
   const getTypeColor = (type) => {
     if (type === btnLabels.A) return COLORS.btnGreen;
@@ -532,64 +549,147 @@ export default function App() {
       </View>
     </View>
   );
-
   const renderRates = () => (
     <View style={{ flex: 1, padding: 20 }}>
-      <Text style={{ fontSize: 24, fontWeight: 'bold', marginBottom: 20, color: '#333' }}>My Rates</Text>
+      <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 20 }}>
+        <TouchableOpacity onPress={() => setCurrentView('dashboard')}>
+          <Ionicons name="arrow-back" size={24} color="#333" />
+        </TouchableOpacity>
+        <Text style={{ fontSize: 24, fontWeight: 'bold', marginLeft: 10, color: '#333' }}>Rate Master</Text>
+      </View>
 
       <View style={{ backgroundColor: '#FFF', borderRadius: 8, padding: 10, elevation: 3 }}>
         <View style={{ flexDirection: 'row', borderBottomWidth: 2, borderBottomColor: '#EEE', paddingBottom: 10, marginBottom: 10 }}>
-          <Text style={{ flex: 1, fontWeight: 'bold', fontSize: 16 }}>Type</Text>
-          <Text style={{ flex: 1, fontWeight: 'bold', fontSize: 16, textAlign: 'right' }}>Commission</Text>
-          <Text style={{ flex: 1, fontWeight: 'bold', fontSize: 16, textAlign: 'right' }}>Payout</Text>
+          <Text style={{ flex: 1, fontWeight: 'bold', fontSize: 16 }}>Ticket</Text>
+          <Text style={{ flex: 1, fontWeight: 'bold', fontSize: 16, textAlign: 'right' }}>Rate</Text>
+          <Text style={{ flex: 1, fontWeight: 'bold', fontSize: 16, textAlign: 'right' }}>Assign Rate</Text>
         </View>
 
         {[
-          { label: 'Single', key: 'single', payout: '95' }, // Standard payouts? Or DB?
-          { label: 'Double', key: 'double', payout: '950' },
-          { label: 'Triple Straight', key: 'triple_straight', payout: '5000' },
-          { label: 'Triple Box', key: 'triple_box', payout: '3000' },
+          { label: 'Single(1)', key: 'single', payout: '95' },
+          { label: 'Double(2)', key: 'double', payout: '950' },
+          { label: 'Lsk Super', key: 'triple_straight', payout: '5000' },
+          { label: 'Box', key: 'triple_box', payout: '3000' },
         ].map((item, index) => {
-          const rate = rates[item.key] || 10.0; // Default dummy
+          const rate = rates[item.key] || 10.0;
           return (
-            <View key={index} style={{ flexDirection: 'row', paddingVertical: 12, borderBottomWidth: 1, borderBottomColor: '#F5F5F5' }}>
-              <Text style={{ flex: 1, fontSize: 16, color: '#555' }}>{item.label}</Text>
-              <Text style={{ flex: 1, fontSize: 16, fontWeight: 'bold', textAlign: 'right', color: COLORS.primary }}>{rate}</Text>
-              <Text style={{ flex: 1, fontSize: 16, textAlign: 'right', color: '#333' }}>{item.payout}</Text>
+            <View key={index} style={{ flexDirection: 'row', paddingVertical: 12, borderBottomWidth: 1, borderBottomColor: '#F5F5F5', alignItems: 'center' }}>
+              <Text style={{ flex: 1.5, fontSize: 16, color: '#333', fontWeight: '500' }}>{item.label}</Text>
+              <Text style={{ flex: 1, fontSize: 16, textAlign: 'right', color: '#555' }}>{rate}</Text>
+              <View style={{ flex: 1.2, marginLeft: 10 }}>
+                <TextInput
+                  style={{ borderWidth: 1, borderColor: '#CCC', borderRadius: 4, padding: 5, textAlign: 'center', height: 40 }}
+                  placeholder={String(rate)}
+                  keyboardType="numeric"
+                />
+              </View>
             </View>
           );
         })}
       </View>
 
-      <TouchableOpacity
-        style={{ marginTop: 30, backgroundColor: COLORS.secondary, padding: 15, borderRadius: 8, alignItems: 'center' }}
-        onPress={() => setCurrentView('users')}
-      >
-        <Text style={{ color: '#FFF', fontWeight: 'bold', fontSize: 16 }}>Back to Manage</Text>
-      </TouchableOpacity>
+      <View style={{ marginTop: 20 }}>
+        <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 20 }}>
+          <Checkbox label="Apply All Games" checked={true} onPress={() => { }} />
+        </View>
+
+        <TouchableOpacity style={{ backgroundColor: COLORS.primary, padding: 15, borderRadius: 5, alignItems: 'center' }}>
+          <Text style={{ color: '#FFF', fontWeight: 'bold', fontSize: 18 }}>Save</Text>
+        </TouchableOpacity>
+      </View>
     </View>
+  );
+
+  const SideMenu = () => (
+    <Animated.View style={{
+      position: 'absolute', top: 0, bottom: 0, left: menuAnim, width: 300,
+      backgroundColor: '#FFF', zIndex: 5000, elevation: 20,
+      paddingTop: 50
+    }}>
+      <View style={{ padding: 20, backgroundColor: COLORS.primary, marginBottom: 10 }}>
+        <Text style={{ color: '#FFF', fontSize: 24, fontWeight: 'bold' }}>PVC</Text>
+        <Text style={{ color: '#FFF', fontSize: 16 }}>{agent ? agent.username : 'Guest'}</Text>
+      </View>
+
+      <TouchableOpacity style={styles.menuItem} onPress={() => navigateTo('dashboard')}>
+        <Ionicons name="home-outline" size={24} color="#333" />
+        <Text style={styles.menuText}>Home</Text>
+      </TouchableOpacity>
+
+      <TouchableOpacity style={styles.menuItem} onPress={() => navigateTo('users')}>
+        <Ionicons name="people-outline" size={24} color="#333" />
+        <Text style={styles.menuText}>Customer</Text>
+      </TouchableOpacity>
+
+      <TouchableOpacity style={styles.menuItem} onPress={() => navigateTo('rates')}>
+        <Ionicons name="pricetags-outline" size={24} color="#333" />
+        <Text style={styles.menuText}>Rate Master</Text>
+      </TouchableOpacity>
+
+      <TouchableOpacity style={styles.menuItem} onPress={() => navigateTo('prizes')}>
+        <Ionicons name="trophy-outline" size={24} color="#333" />
+        <Text style={styles.menuText}>Prize And Commission</Text>
+      </TouchableOpacity>
+
+      <TouchableOpacity style={styles.menuItem} onPress={() => navigateTo('reports')}>
+        <Ionicons name="document-text-outline" size={24} color="#333" />
+        <Text style={styles.menuText}>Reports</Text>
+      </TouchableOpacity>
+
+      <TouchableOpacity style={styles.menuItem} onPress={() => navigateTo('results')}>
+        <Ionicons name="podium-outline" size={24} color="#333" />
+        <Text style={styles.menuText}>Results</Text>
+      </TouchableOpacity>
+
+      <TouchableOpacity style={[styles.menuItem, { marginTop: 20, borderTopWidth: 1, borderTopColor: '#EEE' }]} onPress={() => { setAgent(null); toggleMenu(); setCurrentView('login'); }}>
+        <Ionicons name="log-out-outline" size={24} color="red" />
+        <Text style={[styles.menuText, { color: 'red' }]}>Logout</Text>
+      </TouchableOpacity>
+
+      <TouchableOpacity
+        style={{ position: 'absolute', top: 10, right: 10 }}
+        onPress={toggleMenu}
+      >
+        <Ionicons name="close" size={30} color="#FFF" />
+      </TouchableOpacity>
+    </Animated.View>
   );
 
   return (
     <SafeAreaView style={styles.container}>
       <StatusBar barStyle="light-content" backgroundColor={COLORS.primary} />
 
+      <StatusBar barStyle="light-content" backgroundColor={COLORS.primary} />
+
+      {/* Side Menu Overlay */}
+      <SideMenu />
+      {isMenuOpen && (
+        <TouchableOpacity
+          style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(0,0,0,0.5)', zIndex: 4000 }}
+          onPress={toggleMenu}
+        />
+      )}
+
       {/* Main Header */}
       <View style={styles.header}>
         <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-          {currentView !== 'dashboard' && (
-            <TouchableOpacity onPress={() => setCurrentView('dashboard')} style={{ marginRight: 15 }}>
-              <Ionicons name="arrow-back" size={24} color="#FFF" />
-            </TouchableOpacity>
-          )}
-          {currentView === 'dashboard' && (
-            <TouchableOpacity style={{ marginRight: 15 }}>
-              <Ionicons name="menu" size={24} color="#FFF" />
-            </TouchableOpacity>
-          )}
-          <Text style={{ fontSize: 20, fontWeight: 'bold', color: '#FFF' }}>{agent ? agent.username : 'PVC'}</Text>
+          {/* Always Show Menu Icon now? Or Back arrow for sub-views? 
+              User requested Side Menu. Side Menu usually accessible from everywhere via Hamburger.
+              Let's show Hamburger everywhere.
+          */}
+          <TouchableOpacity onPress={toggleMenu} style={{ marginRight: 15 }}>
+            <Ionicons name="menu" size={28} color="#FFF" />
+          </TouchableOpacity>
+
+          <Text style={{ fontSize: 20, fontWeight: 'bold', color: '#FFF' }}>
+            {currentView === 'dashboard' ? 'Home' :
+              currentView === 'rates' ? 'Rate Master' :
+                currentView === 'prizes' ? 'Prize & Comm' :
+                  currentView === 'users' ? 'Customer' :
+                    currentView === 'game' ? 'Ticket Sale' : 'PVC'}
+          </Text>
         </View>
-        <Text style={{ fontSize: 18, fontWeight: 'bold', color: '#FFF' }}>{agent ? agent.username : 'PVC'}</Text>
+        <Text style={{ fontSize: 16, fontWeight: 'bold', color: '#FFF' }}>{agent ? agent.username : ''}</Text>
       </View>
 
       {/* Content Area */}
@@ -1096,5 +1196,17 @@ const styles = StyleSheet.create({
     color: '#FFF',
     fontSize: 20,
     fontWeight: 'normal',
+  },
+  menuItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    padding: 15,
+    borderBottomWidth: 1,
+    borderBottomColor: '#F5F5F5'
+  },
+  menuText: {
+    fontSize: 18,
+    marginLeft: 20,
+    color: '#333'
   }
 });
