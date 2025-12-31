@@ -109,65 +109,61 @@ export default function CustomKeypad({ onKeyPress, onSave, onClear, onWhatsapp }
                     <Text style={{ color: '#FFF', fontWeight: 'bold', fontSize: 16 }}>Save</Text>
                 </TouchableOpacity>
             </View>
-            <Text style={styles.saveText}>Save</Text>
-        </TouchableOpacity>
-            </View >
-        </View >
-    );
+            );
 }
 
-const styles = StyleSheet.create({
-    container: {
-        backgroundColor: COLORS.primary, // Blue background for keypad area
-        padding: 5,
+            const styles = StyleSheet.create({
+                container: {
+                backgroundColor: COLORS.primary, // Blue background for keypad area
+            padding: 5,
     },
-    row: {
-        flexDirection: 'row',
-        justifyContent: 'space-between',
-        marginBottom: 8,
-        gap: 8,
+            row: {
+                flexDirection: 'row',
+            justifyContent: 'space-between',
+            marginBottom: 8,
+            gap: 8,
     },
-    key: {
-        flex: 1,
-        height: 55,
-        backgroundColor: COLORS.secondary, // Light Blue keys
-        justifyContent: 'center',
-        alignItems: 'center',
-        borderRadius: 4,
-        elevation: 2,
+            key: {
+                flex: 1,
+            height: 55,
+            backgroundColor: COLORS.secondary, // Light Blue keys
+            justifyContent: 'center',
+            alignItems: 'center',
+            borderRadius: 4,
+            elevation: 2,
     },
-    keyBlack: {
-        flex: 1,
-        height: 55,
-        backgroundColor: '#000000',
-        justifyContent: 'center',
-        alignItems: 'center',
-        borderRadius: 4,
+            keyBlack: {
+                flex: 1,
+            height: 55,
+            backgroundColor: '#000000',
+            justifyContent: 'center',
+            alignItems: 'center',
+            borderRadius: 4,
     },
-    keySave: {
-        flex: 1,
-        height: 55,
-        backgroundColor: '#000000', // Black Save button as per reference
-        justifyContent: 'center',
-        alignItems: 'center',
-        borderRadius: 4,
+            keySave: {
+                flex: 1,
+            height: 55,
+            backgroundColor: '#000000', // Black Save button as per reference
+            justifyContent: 'center',
+            alignItems: 'center',
+            borderRadius: 4,
     },
-    keyWapp: {
-        flex: 1,
-        height: 55,
-        backgroundColor: '#25D366',
-        justifyContent: 'center',
-        alignItems: 'center',
-        borderRadius: 4,
+            keyWapp: {
+                flex: 1,
+            height: 55,
+            backgroundColor: '#25D366',
+            justifyContent: 'center',
+            alignItems: 'center',
+            borderRadius: 4,
     },
-    keyText: {
-        color: '#FFF',
-        fontSize: 24,
-        fontWeight: '600',
+            keyText: {
+                color: '#FFF',
+            fontSize: 24,
+            fontWeight: '600',
     },
-    saveText: {
-        color: '#FFF',
-        fontSize: 18,
-        fontWeight: 'bold',
+            saveText: {
+                color: '#FFF',
+            fontSize: 18,
+            fontWeight: 'bold',
     }
 });
