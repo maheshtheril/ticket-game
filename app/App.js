@@ -35,6 +35,7 @@ export default function App() {
   const [subUsers, setSubUsers] = useState([]);
   const [selectedSubUser, setSelectedSubUser] = useState(null);
   const [isAgentDropdownOpen, setIsAgentDropdownOpen] = useState(false);
+  const [isGameDropdownOpen, setIsGameDropdownOpen] = useState(false);
   const [agentInput, setAgentInput] = useState('');
   const [passwordInput, setPasswordInput] = useState('');
 
@@ -542,9 +543,42 @@ export default function App() {
             {/* Game Form Content - Reused from before but wrapped */}
 
             {/* Game/Agent Dropdowns */}
-            <View style={styles.inputWrapper}>
-              <Text style={styles.inputText}>{selectedGame ? selectedGame.name : '(Select Game)'}</Text>
-              <Ionicons name="caret-down" size={16} color="#666" />
+            <View style={{ marginBottom: 10, zIndex: 1001 }}>
+              <TouchableOpacity
+                style={styles.inputWrapper}
+                onPress={() => setIsGameDropdownOpen(!isGameDropdownOpen)}
+              >
+                <Text style={styles.inputText}>
+                  {selectedGame ? selectedGame.name : '(Select Game)'}
+                </Text>
+                <Ionicons name={isGameDropdownOpen ? "caret-up" : "caret-down"} size={16} color="#666" />
+              </TouchableOpacity>
+
+              {isGameDropdownOpen && (
+                <View style={{
+                  position: 'absolute', top: '100%', left: 0, right: 0,
+                  backgroundColor: '#FFF', borderWidth: 1, borderColor: '#CCC',
+                  borderRadius: 8, maxHeight: 200, elevation: 5
+                }}>
+                  <FlatList
+                    data={games}
+                    keyExtractor={item => item.id.toString()}
+                    renderItem={({ item }) => (
+                      <TouchableOpacity
+                        style={{ padding: 12, borderBottomWidth: 1, borderBottomColor: '#EEE' }}
+                        onPress={() => {
+                          setSelectedGame(item);
+                          setIsGameDropdownOpen(false);
+                        }}
+                      >
+                        <Text style={{ fontSize: 16, color: '#333' }}>
+                          {item.name} ({new Date(item.draw_time).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })})
+                        </Text>
+                      </TouchableOpacity>
+                    )}
+                  />
+                </View>
+              )}
             </View>
 
 
