@@ -67,6 +67,21 @@ export const ticketService = {
         }
     },
 
+    // 0.2 Get Sub-Users (Direct Children)
+    async getSubUsers(parentId) {
+        const { data: users, error } = await supabase
+            .from('users')
+            .select('id, username, role, balance')
+            .eq('parent_id', parentId)
+            .eq('is_active', true);
+
+        if (error) {
+            console.error('Error fetching sub-users:', error);
+            return { data: [], error };
+        }
+        return { data: users, error: null };
+    },
+
     // 1. Get Active Game Schedules
     async getActiveGames() {
         const { data: games, error } = await supabase
