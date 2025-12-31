@@ -533,6 +533,43 @@ export default function App() {
     </View>
   );
 
+  const renderRates = () => (
+    <View style={{ flex: 1, padding: 20 }}>
+      <Text style={{ fontSize: 24, fontWeight: 'bold', marginBottom: 20, color: '#333' }}>My Rates</Text>
+
+      <View style={{ backgroundColor: '#FFF', borderRadius: 8, padding: 10, elevation: 3 }}>
+        <View style={{ flexDirection: 'row', borderBottomWidth: 2, borderBottomColor: '#EEE', paddingBottom: 10, marginBottom: 10 }}>
+          <Text style={{ flex: 1, fontWeight: 'bold', fontSize: 16 }}>Type</Text>
+          <Text style={{ flex: 1, fontWeight: 'bold', fontSize: 16, textAlign: 'right' }}>Commission</Text>
+          <Text style={{ flex: 1, fontWeight: 'bold', fontSize: 16, textAlign: 'right' }}>Payout</Text>
+        </View>
+
+        {[
+          { label: 'Single', key: 'single', payout: '95' }, // Standard payouts? Or DB?
+          { label: 'Double', key: 'double', payout: '950' },
+          { label: 'Triple Straight', key: 'triple_straight', payout: '5000' },
+          { label: 'Triple Box', key: 'triple_box', payout: '3000' },
+        ].map((item, index) => {
+          const rate = rates[item.key] || 10.0; // Default dummy
+          return (
+            <View key={index} style={{ flexDirection: 'row', paddingVertical: 12, borderBottomWidth: 1, borderBottomColor: '#F5F5F5' }}>
+              <Text style={{ flex: 1, fontSize: 16, color: '#555' }}>{item.label}</Text>
+              <Text style={{ flex: 1, fontSize: 16, fontWeight: 'bold', textAlign: 'right', color: COLORS.primary }}>{rate}</Text>
+              <Text style={{ flex: 1, fontSize: 16, textAlign: 'right', color: '#333' }}>{item.payout}</Text>
+            </View>
+          );
+        })}
+      </View>
+
+      <TouchableOpacity
+        style={{ marginTop: 30, backgroundColor: COLORS.secondary, padding: 15, borderRadius: 8, alignItems: 'center' }}
+        onPress={() => setCurrentView('users')}
+      >
+        <Text style={{ color: '#FFF', fontWeight: 'bold', fontSize: 16 }}>Back to Manage</Text>
+      </TouchableOpacity>
+    </View>
+  );
+
   return (
     <SafeAreaView style={styles.container}>
       <StatusBar barStyle="light-content" backgroundColor={COLORS.primary} />
@@ -557,6 +594,7 @@ export default function App() {
 
       {/* Content Area */}
       {currentView === 'dashboard' && renderDashboard()}
+      {currentView === 'rates' && renderRates()}
       {currentView === 'rates' && renderRates()}
 
       {currentView === 'game' && (
@@ -822,6 +860,15 @@ export default function App() {
           >
             <Text style={{ color: '#FFF', fontWeight: 'bold' }}>CREATE USER</Text>
           </TouchableOpacity>
+
+          <View style={{ marginTop: 20, borderTopWidth: 1, borderTopColor: '#CCC', paddingTop: 20 }}>
+            <TouchableOpacity
+              style={[styles.actionButton, { backgroundColor: COLORS.secondary }]}
+              onPress={() => { setCurrentView('rates'); loadRates(); }}
+            >
+              <Text style={[styles.actionButtonText, { textAlign: 'center' }]}>My Rates (Rate Master)</Text>
+            </TouchableOpacity>
+          </View>
         </View>
       )}
 
