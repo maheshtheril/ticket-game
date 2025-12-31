@@ -145,7 +145,7 @@ export default function App() {
         setFocusedField('number');
       } else {
         // If toggling ON
-        if (type === 'any' || type === 'c100') {
+        if (type === 'any' || type === 'c100' || type === 'c111') {
           setFocusedField('start');
           setNumber(''); setStartNumber(''); setEndNumber('');
         } else {
@@ -172,10 +172,10 @@ export default function App() {
   };
 
   const handleAddTicket = (typeLabel) => {
-    const { any: isAny, set: isSet, c100: is100 } = checks;
+    const { any: isAny, set: isSet, c100: is100, c111: is111 } = checks;
 
     // Validation
-    if (isAny || is100) {
+    if (isAny || is100 || is111) {
       if (!startNumber || !endNumber || !count) return;
     } else {
       if (!number || !count) return;
@@ -203,6 +203,21 @@ export default function App() {
       for (let i = loopStart; i <= loopEnd; i++) {
         // 100 logic: i + "00"
         numbersToProcess.push(i.toString() + "00");
+      }
+    } else if (is111) {
+      // 111 Logic: Range of single digits, repeated
+      let loopStart = parseInt(startNumber);
+      let loopEnd = parseInt(endNumber);
+
+      if (isNaN(loopStart) || isNaN(loopEnd) || loopStart > loopEnd) {
+        alert('Invalid Range'); return;
+      }
+      for (let i = loopStart; i <= loopEnd; i++) {
+        // Generate e.g. "111", "222" based on maxNumberLength
+        // If i=1, max=3 -> "111"
+        const digitChar = i.toString().slice(-1); // Take last char if > 9 (unlikely but safe)
+        const repeatedNum = digitChar.repeat(maxNumberLength);
+        numbersToProcess.push(repeatedNum);
       }
     } else if (isSet) {
       numbersToProcess = getPermutations(number);
@@ -371,12 +386,12 @@ export default function App() {
           <Checkbox label="Any" checked={checks.any} onPress={() => updateChecks('any')} />
           <Checkbox label="Set" checked={checks.set} onPress={() => updateChecks('set')} />
           <Checkbox label="100" checked={checks.c100} onPress={() => updateChecks('c100')} />
-          <Checkbox label="111" checked={checks.c111} />
+          <Checkbox label="111" checked={checks.c111} onPress={() => updateChecks('c111')} />
         </View>
 
         {/* Inputs */}
         <View style={styles.inputsRow}>
-          {(!checks.any && !checks.c100) ? (
+          {(!checks.any && !checks.c100 && !checks.c111) ? (
             <TouchableOpacity
               style={[styles.inputField, { flex: 1, marginRight: 5, borderColor: focusedField === 'number' ? COLORS.primary : '#CCC', borderWidth: focusedField === 'number' ? 2 : 1 }]}
               onPress={() => setFocusedField('number')}

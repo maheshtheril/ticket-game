@@ -109,7 +109,6 @@ const styles = StyleSheet.create({
     container: {
         backgroundColor: COLORS.primary,
         padding: 5,
-        paddingBottom: 20
     },
     row: {
         flexDirection: 'row',
