@@ -29,6 +29,42 @@ export const ticketService = {
         }
     },
 
+    // 0.1 Create User (Recursive Hierarchy)
+    async createUser(currentUser, newUsername, newPassword, initialBalance) {
+        // hierarchy map
+        const roleMap = {
+            'admin': 'main_agent',
+            'main_agent': 'sub_agent',
+            'sub_agent': 'stockist',
+            'stockist': 'user'
+        };
+
+        const newRole = roleMap[currentUser.role];
+        if (!newRole) {
+            return { error: `Role '${currentUser.role}' cannot create sub-users.` };
+        }
+
+        try {
+            const { data, error } = await supabase
+                .from('users')
+                .insert([{
+                    username: newUsername,
+                    password_hash: newPassword,
+                    role: newRole,
+                    parent_id: currentUser.id,
+                    balance: parseFloat(initialBalance) || 0,
+                    is_active: true
+                }])
+                .select()
+                .single();
+
+            if (error) throw error;
+            return { data, error: null };
+        } catch (err) {
+            return { error: err.message };
+        }
+    },
+
     // 1. Get Active Game Schedules
     async getActiveGames() {
         const { data: games, error } = await supabase

@@ -24,6 +24,12 @@ export default function App() {
   const [agentInput, setAgentInput] = useState('');
   const [passwordInput, setPasswordInput] = useState('');
 
+  // User Management State
+  const [currentView, setCurrentView] = useState('game'); // 'game' or 'users'
+  const [newUsername, setNewUsername] = useState('');
+  const [newPassword, setNewPassword] = useState('');
+  const [newBalance, setNewBalance] = useState('');
+
   // Input States
   const [number, setNumber] = useState('');
   const [startNumber, setStartNumber] = useState('');
@@ -369,105 +375,173 @@ export default function App() {
       <StatusBar barStyle="dark-content" backgroundColor="#FFF" />
 
       <View style={styles.header}>
-        <Text style={styles.statLabel}>COUNT : {totalCount}</Text>
-        <Text style={styles.statLabel}>Rs : {totalRs}</Text>
-
-        <View style={styles.tabsContainer}>
-          {[1, 2, 3].map(tab => (
-            <TouchableOpacity
-              key={tab}
-              style={[styles.tab, currentTab === tab && styles.activeTab]}
-              onPress={() => handleTabChange(tab)}
-            >
-              <Text style={[styles.tabText, currentTab === tab && styles.activeTabText]}>
-                {tab}
-              </Text>
-            </TouchableOpacity>
-          ))}
+        <View>
+          <Text style={styles.statLabel}>COUNT : {totalCount}</Text>
+          <Text style={styles.statLabel}>Rs : {totalRs}</Text>
         </View>
+
+        {/* User Management Button */}
+        {agent && agent.role !== 'user' && ( // Only if role can create users
+          <TouchableOpacity
+            style={{ backgroundColor: COLORS.primary, padding: 8, borderRadius: 5, marginRight: 10 }}
+            onPress={() => setCurrentView(currentView === 'game' ? 'users' : 'game')}
+          >
+            <Text style={{ color: '#FFF', fontWeight: 'bold' }}>
+              {currentView === 'game' ? 'MANAGE USERS' : 'PLAY GAME'}
+            </Text>
+          </TouchableOpacity>
+        )}
+
+        {currentView === 'game' && (
+          <View style={styles.tabsContainer}>
+            {[1, 2, 3].map(tab => (
+              <TouchableOpacity
+                key={tab}
+                style={[styles.tab, currentTab === tab && styles.activeTab]}
+                onPress={() => handleTabChange(tab)}
+              >
+                <Text style={[styles.tabText, currentTab === tab && styles.activeTabText]}>
+                  {tab}
+                </Text>
+              </TouchableOpacity>
+            ))}
+          </View>
+        )}
       </View>
 
-      {/* Form Container */}
-      <View style={styles.formContainer}>
-        {/* Game/Agent Dropdowns */}
-        <View style={styles.inputWrapper}>
-          <Text style={styles.inputText}>{selectedGame ? selectedGame.name : 'Loading...'}</Text>
-          <Ionicons name="caret-down" size={16} color="#666" />
-        </View>
+      {/* VIEW: USER MANAGEMENT */}
+      {currentView === 'users' ? (
+        <View style={styles.formContainer}>
+          <Text style={{ fontSize: 20, fontWeight: 'bold', marginBottom: 20, color: COLORS.primary }}>
+            Create Sub-User
+          </Text>
 
-        <View style={styles.inputWrapper}>
-          <Text style={styles.inputText}>{agent ? agent.username : ''}</Text>
-          <Ionicons name="caret-down" size={16} color="#666" />
-        </View>
+          <Text style={{ marginBottom: 5 }}>New Username:</Text>
+          <TextInput
+            style={styles.inputField}
+            value={newUsername} onChangeText={setNewUsername}
+            placeholder="Username" autoCapitalize="none"
+          />
 
-        {/* Checkboxes */}
-        <View style={styles.checkboxRow}>
-          <Checkbox label="Any" checked={checks.any} onPress={() => updateChecks('any')} />
-          <Checkbox label="Set" checked={checks.set} onPress={() => updateChecks('set')} />
-          <Checkbox label="100" checked={checks.c100} onPress={() => updateChecks('c100')} />
-          <Checkbox label="111" checked={checks.c111} onPress={() => updateChecks('c111')} />
-        </View>
+          <Text style={{ marginBottom: 5, marginTop: 10 }}>New Password:</Text>
+          <TextInput
+            style={styles.inputField}
+            value={newPassword} onChangeText={setNewPassword}
+            placeholder="Password"
+          />
 
-        {/* Inputs */}
-        <View style={styles.inputsRow}>
-          {(!checks.any && !checks.c100 && !checks.c111) ? (
-            <TouchableOpacity
-              style={[styles.inputField, { flex: 1, marginRight: 5, borderColor: focusedField === 'number' ? COLORS.primary : '#CCC', borderWidth: focusedField === 'number' ? 2 : 1 }]}
-              onPress={() => setFocusedField('number')}
-            >
-              <Text style={[styles.inputText, !number && { color: '#999' }]}>
-                {number || `|Number (${maxNumberLength})`}
-              </Text>
-            </TouchableOpacity>
-          ) : (
-            <>
-              <TouchableOpacity
-                style={[styles.inputField, { flex: 1, marginRight: 5, borderColor: focusedField === 'start' ? COLORS.primary : '#CCC', borderWidth: focusedField === 'start' ? 2 : 1 }]}
-                onPress={() => setFocusedField('start')}
-              >
-                <Text style={[styles.inputText, !startNumber && { color: '#999' }]}>{startNumber || 'Start'}</Text>
-              </TouchableOpacity>
-              <TouchableOpacity
-                style={[styles.inputField, { flex: 1, marginRight: 5, borderColor: focusedField === 'end' ? COLORS.primary : '#CCC', borderWidth: focusedField === 'end' ? 2 : 1 }]}
-                onPress={() => setFocusedField('end')}
-              >
-                <Text style={[styles.inputText, !endNumber && { color: '#999' }]}>{endNumber || 'End'}</Text>
-              </TouchableOpacity>
-            </>
-          )}
+          <Text style={{ marginBottom: 5, marginTop: 10 }}>Initial Balance:</Text>
+          <TextInput
+            style={styles.inputField}
+            value={newBalance} onChangeText={setNewBalance}
+            placeholder="0.00" keyboardType="numeric"
+          />
 
           <TouchableOpacity
-            style={[styles.inputField, { flex: 1, borderColor: focusedField === 'count' ? COLORS.primary : '#CCC', borderWidth: focusedField === 'count' ? 2 : 1 }]}
-            onPress={() => setFocusedField('count')}
+            style={{
+              backgroundColor: COLORS.btnGreen, padding: 15, borderRadius: 5,
+              marginTop: 20, alignItems: 'center'
+            }}
+            onPress={async () => {
+              if (!newUsername || !newPassword) { alert('Fill all fields'); return; }
+
+              const { data, error } = await ticketService.createUser(
+                agent, newUsername.trim(), newPassword.trim(), newBalance
+              );
+
+              if (error) alert('Error: ' + error);
+              else {
+                alert(`Success! Created User: ${data.username} (${data.role})`);
+                setNewUsername(''); setNewPassword(''); setNewBalance('');
+              }
+            }}
           >
-            <Text style={[styles.inputText, !count && { color: '#999' }]}>{count || 'Count'}</Text>
+            <Text style={{ color: '#FFF', fontWeight: 'bold' }}>CREATE USER</Text>
           </TouchableOpacity>
         </View>
+      ) : (
+        /* VIEW: GAME FORM */
+        <View style={styles.formContainer}>
+          {/* Game/Agent Dropdowns */}
+          <View style={styles.inputWrapper}>
+            <Text style={styles.inputText}>{selectedGame ? selectedGame.name : 'Loading...'}</Text>
+            <Ionicons name="caret-down" size={16} color="#666" />
+          </View>
 
-        {/* Action Buttons */}
-        <View style={styles.actionRow}>
-          <ActionButton label={`D-${btnLabels.A}-1`} color={COLORS.btnGreen} onPress={() => handleAddTicket(btnLabels.A)} />
-          <ActionButton label={`D-${btnLabels.B}-1`} color={COLORS.btnPink} onPress={() => handleAddTicket(btnLabels.B)} />
-          {btnLabels.C && <ActionButton label={`D-${btnLabels.C}-1`} color={COLORS.btnOrange} onPress={() => handleAddTicket(btnLabels.C)} />}
-          <ActionButton label={btnLabels.All} color={COLORS.btnRed} onPress={() => handleAddTicket('ALL')} />
-        </View>
+          <View style={styles.inputWrapper}>
+            <Text style={styles.inputText}>{agent ? agent.username : ''}</Text>
+            <Ionicons name="caret-down" size={16} color="#666" />
+          </View>
 
-        <View style={styles.listContainer}>
-          <FlatList
-            data={tickets}
-            renderItem={renderTicketItem}
-            keyExtractor={item => item.id}
-            contentContainerStyle={{ paddingBottom: 10 }}
+          {/* Checkboxes */}
+          <View style={styles.checkboxRow}>
+            <Checkbox label="Any" checked={checks.any} onPress={() => updateChecks('any')} />
+            <Checkbox label="Set" checked={checks.set} onPress={() => updateChecks('set')} />
+            <Checkbox label="100" checked={checks.c100} onPress={() => updateChecks('c100')} />
+            <Checkbox label="111" checked={checks.c111} onPress={() => updateChecks('c111')} />
+          </View>
+
+          {/* Inputs */}
+          <View style={styles.inputsRow}>
+            {(!checks.any && !checks.c100 && !checks.c111) ? (
+              <TouchableOpacity
+                style={[styles.inputField, { flex: 1, marginRight: 5, borderColor: focusedField === 'number' ? COLORS.primary : '#CCC', borderWidth: focusedField === 'number' ? 2 : 1 }]}
+                onPress={() => setFocusedField('number')}
+              >
+                <Text style={[styles.inputText, !number && { color: '#999' }]}>
+                  {number || `|Number (${maxNumberLength})`}
+                </Text>
+              </TouchableOpacity>
+            ) : (
+              <>
+                <TouchableOpacity
+                  style={[styles.inputField, { flex: 1, marginRight: 5, borderColor: focusedField === 'start' ? COLORS.primary : '#CCC', borderWidth: focusedField === 'start' ? 2 : 1 }]}
+                  onPress={() => setFocusedField('start')}
+                >
+                  <Text style={[styles.inputText, !startNumber && { color: '#999' }]}>{startNumber || 'Start'}</Text>
+                </TouchableOpacity>
+                <TouchableOpacity
+                  style={[styles.inputField, { flex: 1, marginRight: 5, borderColor: focusedField === 'end' ? COLORS.primary : '#CCC', borderWidth: focusedField === 'end' ? 2 : 1 }]}
+                  onPress={() => setFocusedField('end')}
+                >
+                  <Text style={[styles.inputText, !endNumber && { color: '#999' }]}>{endNumber || 'End'}</Text>
+                </TouchableOpacity>
+              </>
+            )}
+
+            <TouchableOpacity
+              style={[styles.inputField, { flex: 1, borderColor: focusedField === 'count' ? COLORS.primary : '#CCC', borderWidth: focusedField === 'count' ? 2 : 1 }]}
+              onPress={() => setFocusedField('count')}
+            >
+              <Text style={[styles.inputText, !count && { color: '#999' }]}>{count || 'Count'}</Text>
+            </TouchableOpacity>
+          </View>
+
+          {/* Action Buttons */}
+          <View style={styles.actionRow}>
+            <ActionButton label={`D-${btnLabels.A}-1`} color={COLORS.btnGreen} onPress={() => handleAddTicket(btnLabels.A)} />
+            <ActionButton label={`D-${btnLabels.B}-1`} color={COLORS.btnPink} onPress={() => handleAddTicket(btnLabels.B)} />
+            {btnLabels.C && <ActionButton label={`D-${btnLabels.C}-1`} color={COLORS.btnOrange} onPress={() => handleAddTicket(btnLabels.C)} />}
+            <ActionButton label={btnLabels.All} color={COLORS.btnRed} onPress={() => handleAddTicket('ALL')} />
+          </View>
+
+          <View style={styles.listContainer}>
+            <FlatList
+              data={tickets}
+              renderItem={renderTicketItem}
+              keyExtractor={item => item.id}
+              contentContainerStyle={{ paddingBottom: 10 }}
+            />
+          </View>
+
+          <CustomKeypad
+            onKeyPress={handleKeyPress}
+            onSave={handleSave}
+            onClear={handleClear}
+            onWhatsapp={() => alert('Open Whatsapp')}
           />
         </View>
-
-        <CustomKeypad
-          onKeyPress={handleKeyPress}
-          onSave={handleSave}
-          onClear={handleClear}
-          onWhatsapp={() => alert('Open Whatsapp')}
-        />
-      </View>
+      )}
     </SafeAreaView>
   );
 }
