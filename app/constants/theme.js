@@ -12,6 +12,7 @@ export const COLORS = {
 
   // Action Buttons
   btnGreen: '#388E3C',
+  btnLoginGreen: '#4CAF50', // Brighter Green for Login Page as per screenshot
   btnPink: '#E91E63',
   btnOrange: '#FF5722',
   btnRed: '#D32F2F',

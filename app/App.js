@@ -340,49 +340,89 @@ export default function App() {
 
   if (!agent) {
     return (
-    return (
-      <SafeAreaView style={[styles.container, { justifyContent: 'center', padding: 20 }]}>
-        <StatusBar barStyle="light-content" backgroundColor={COLORS.primary} />
-        <View style={{ backgroundColor: '#FFF', padding: 20, borderRadius: 10, elevation: 3 }}>
-          <Text style={{ fontSize: 24, fontWeight: 'bold', marginBottom: 20, textAlign: 'center', color: COLORS.primary }}>
-            Agent Login
-          </Text>
-          <Text style={{ marginBottom: 10, color: '#333' }}>Username:</Text>
-          <TextInput
-            style={{
-              borderWidth: 1, borderColor: '#DDD', backgroundColor: '#F9F9F9',
-              padding: 15, borderRadius: 8, fontSize: 16, marginBottom: 15, color: '#000'
-            }}
-            value={agentInput}
-            onChangeText={setAgentInput}
-            placeholder="e.g. admin"
-            placeholderTextColor="#999"
-            autoCapitalize="none"
-          />
 
-          <Text style={{ marginBottom: 10, color: '#333' }}>Password:</Text>
-          <TextInput
-            style={{
-              borderWidth: 1, borderColor: '#DDD', backgroundColor: '#F9F9F9',
-              padding: 15, borderRadius: 8, fontSize: 16, marginBottom: 20, color: '#000'
-            }}
-            value={passwordInput}
-            onChangeText={setPasswordInput}
-            placeholder="Enter Password"
-            placeholderTextColor="#999"
-            secureTextEntry
-          />
+      <View style={{ flex: 1, backgroundColor: '#FFF' }}>
+        <StatusBar barStyle="dark-content" backgroundColor="transparent" translucent={true} />
 
-          <TouchableOpacity
-            onPress={handleLogin}
-            style={{
-              backgroundColor: COLORS.primary, padding: 15, borderRadius: 8, alignItems: 'center'
-            }}
-          >
-            <Text style={{ color: '#FFF', fontWeight: 'bold', fontSize: 16 }}>LOGIN</Text>
-          </TouchableOpacity>
+        {/* Header Wave Background (Simulated with View) */}
+        <View style={{ height: '25%', width: '100%', backgroundColor: COLORS.btnLoginGreen, borderBottomLeftRadius: 50, borderBottomRightRadius: 50, position: 'absolute', top: 0 }}>
+          <View style={{ height: '100%', width: '100%', backgroundColor: 'rgba(255,255,255,0.2)', borderBottomLeftRadius: 50, borderBottomRightRadius: 50 }} />
         </View>
-      </SafeAreaView>
+
+        <SafeAreaView style={{ flex: 1, justifyContent: 'center', paddingHorizontal: 30 }}>
+          <View style={{ marginTop: 100 }}>
+            <Text style={{ fontSize: 18, color: '#333', marginBottom: 5 }}>Welcome !</Text>
+            <Text style={{ fontSize: 36, fontWeight: 'bold', color: '#000', marginBottom: 40 }}>Login</Text>
+
+            <View style={{ marginBottom: 20 }}>
+              <TextInput
+                style={{
+                  borderWidth: 1, borderColor: '#E0E0E0', backgroundColor: '#FFF',
+                  padding: 15, borderRadius: 30, fontSize: 16, color: '#000'
+                }}
+                value={agentInput}
+                onChangeText={setAgentInput}
+                placeholder="Username"
+                placeholderTextColor="#999"
+                autoCapitalize="none"
+              />
+            </View>
+
+            <View style={{ marginBottom: 20, position: 'relative' }}>
+              <TextInput
+                style={{
+                  borderWidth: 1, borderColor: '#E0E0E0', backgroundColor: '#FFF',
+                  padding: 15, borderRadius: 30, fontSize: 16, color: '#000'
+                }}
+                value={passwordInput}
+                onChangeText={setPasswordInput}
+                placeholder="password"
+                placeholderTextColor="#999"
+                secureTextEntry
+              />
+              <Ionicons name="eye" size={20} color="#999" style={{ position: 'absolute', right: 20, top: 18 }} />
+            </View>
+
+            {/* Social Login Placeholders */}
+            <View style={{ flexDirection: 'row', justifyContent: 'center', marginBottom: 30, gap: 20 }}>
+              <View style={{ width: 40, height: 40, borderRadius: 20, backgroundColor: '#FFF', elevation: 2, alignItems: 'center', justifyContent: 'center' }}>
+                <Text style={{ color: 'red', fontWeight: 'bold', fontSize: 20 }}>G</Text>
+              </View>
+              <View style={{ width: 40, height: 40, borderRadius: 20, backgroundColor: '#FFF', elevation: 2, alignItems: 'center', justifyContent: 'center' }}>
+                <Text style={{ color: 'blue', fontWeight: 'bold', fontSize: 20 }}>f</Text>
+              </View>
+
+              {/* Login Button next to Socials as per screenshot? No, typically simpler layout. Screenshot has separate row. 
+                     Let's match screenshot: Socials on left? No, screenshot is weird. 
+                     Actually screenshot has Socials on LEFT, Login Button on RIGHT of the same row? 
+                     Or Socials centered above? 
+                     Looking at screenshot again: it has Inputs, then a row with [G] [f] [ Login > ] 
+                 */}
+              <TouchableOpacity
+                onPress={handleLogin}
+                style={{
+                  backgroundColor: COLORS.btnLoginGreen,
+                  paddingVertical: 12, paddingHorizontal: 40,
+                  borderRadius: 30, alignItems: 'center', flexDirection: 'row',
+                  flex: 1, marginLeft: 20, justifyContent: 'center'
+                }}
+              >
+                <Text style={{ color: '#FFF', fontWeight: 'bold', fontSize: 18, marginRight: 10 }}>Login</Text>
+                <Ionicons name="chevron-forward" size={20} color="#FFF" />
+              </TouchableOpacity>
+            </View>
+
+
+            <View style={{ alignItems: 'center', marginTop: 20 }}>
+              <TouchableOpacity><Text style={{ color: COLORS.secondary, marginBottom: 20 }}>Forgot Password</Text></TouchableOpacity>
+              <View style={{ flexDirection: 'row' }}>
+                <Text style={{ color: '#666' }}>Don't have an account? </Text>
+                <TouchableOpacity><Text style={{ color: COLORS.secondary, fontWeight: 'bold' }}>Create Account</Text></TouchableOpacity>
+              </View>
+            </View>
+          </View>
+        </SafeAreaView>
+      </View>
     );
   }
 
