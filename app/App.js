@@ -595,7 +595,7 @@ export default function App() {
       {/* Content Area */}
       {currentView === 'dashboard' && renderDashboard()}
       {currentView === 'rates' && renderRates()}
-      {currentView === 'rates' && renderRates()}
+
 
       {currentView === 'game' && (
         <View style={{ flex: 1 }}>
