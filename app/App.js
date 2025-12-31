@@ -11,9 +11,18 @@ import {
   TextInput
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import { Ionicons } from '@expo/vector-icons';
 import CustomKeypad from './components/CustomKeypad';
 import { COLORS } from './constants/theme';
 import { ticketService } from './services/ticketService'; // Using the real service now
+
+// Common styles for consistency
+const commonInputStyle = {
+  backgroundColor: COLORS.surface,
+  color: COLORS.textPrimary,
+  borderColor: COLORS.border,
+  placeholderTextColor: COLORS.placeholder
+};
 
 export default function App() {
   const [tickets, setTickets] = useState([]);
@@ -332,32 +341,34 @@ export default function App() {
   if (!agent) {
     return (
       <SafeAreaView style={[styles.container, { justifyContent: 'center', padding: 20 }]}>
-        <StatusBar barStyle="dark-content" backgroundColor="#F5F5F5" />
-        <View style={{ backgroundColor: '#FFF', padding: 20, borderRadius: 10, elevation: 3 }}>
+        <StatusBar barStyle="light-content" backgroundColor={COLORS.background} />
+        <View style={{ backgroundColor: COLORS.surface, padding: 20, borderRadius: 10, elevation: 3, borderWidth: 1, borderColor: COLORS.border }}>
           <Text style={{ fontSize: 24, fontWeight: 'bold', marginBottom: 20, textAlign: 'center', color: COLORS.primary }}>
             Agent Login
           </Text>
-          <Text style={{ marginBottom: 10, color: '#666' }}>Username:</Text>
+          <Text style={{ marginBottom: 10, color: COLORS.textSecondary }}>Username:</Text>
           <TextInput
             style={{
-              borderWidth: 1, borderColor: '#DDD', backgroundColor: '#F9F9F9',
-              padding: 15, borderRadius: 8, fontSize: 16, marginBottom: 15
+              borderWidth: 1, borderColor: COLORS.border, backgroundColor: COLORS.background,
+              padding: 15, borderRadius: 8, fontSize: 16, marginBottom: 15, color: COLORS.textPrimary
             }}
             value={agentInput}
             onChangeText={setAgentInput}
             placeholder="e.g. admin"
+            placeholderTextColor={COLORS.placeholder}
             autoCapitalize="none"
           />
 
-          <Text style={{ marginBottom: 10, color: '#666' }}>Password:</Text>
+          <Text style={{ marginBottom: 10, color: COLORS.textSecondary }}>Password:</Text>
           <TextInput
             style={{
-              borderWidth: 1, borderColor: '#DDD', backgroundColor: '#F9F9F9',
-              padding: 15, borderRadius: 8, fontSize: 16, marginBottom: 20
+              borderWidth: 1, borderColor: COLORS.border, backgroundColor: COLORS.background,
+              padding: 15, borderRadius: 8, fontSize: 16, marginBottom: 20, color: COLORS.textPrimary
             }}
             value={passwordInput}
             onChangeText={setPasswordInput}
             placeholder="Enter Password"
+            placeholderTextColor={COLORS.placeholder}
             secureTextEntry
           />
 
@@ -637,7 +648,7 @@ const ActionButton = ({ label, color, onPress }) => (
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#F5F5F5',
+    backgroundColor: COLORS.background,
   },
   header: {
     flexDirection: 'row',
@@ -646,106 +657,118 @@ const styles = StyleSheet.create({
     padding: 10,
     backgroundColor: COLORS.headerBg,
     borderBottomWidth: 1,
-    borderBottomColor: '#DDD',
+    borderBottomColor: COLORS.border,
+    paddingTop: StatusBar.currentHeight ? StatusBar.currentHeight + 10 : 10, // Adjust for status bar overlap
+    height: 80,
   },
   statLabel: {
-    fontSize: 16,
+    fontSize: 14,
     fontWeight: 'bold',
-    color: '#333',
+    color: COLORS.textSecondary,
   },
   tabsContainer: {
     flexDirection: 'row',
   },
   tab: {
-    paddingVertical: 5,
-    paddingHorizontal: 15,
-    backgroundColor: '#FFF',
-    marginLeft: 5,
-    borderRadius: 2,
-    ios: {
-      shadowColor: '#000',
-      shadowOffset: { width: 0, height: 1 },
-      shadowOpacity: 0.1,
-      shadowRadius: 1,
-    },
-    elevation: 2,
-    borderRadius: 2,
+    paddingVertical: 6,
+    paddingHorizontal: 16,
+    backgroundColor: COLORS.surface,
+    marginLeft: 8,
+    borderRadius: 20, // Pill shape
+    borderWidth: 1,
+    borderColor: COLORS.border
   },
   activeTab: {
     backgroundColor: COLORS.primary,
+    borderColor: COLORS.primary
   },
   tabText: {
-    color: COLORS.primary,
-    fontWeight: 'bold',
+    color: COLORS.textSecondary,
+    fontWeight: '600',
   },
   activeTabText: {
-    color: '#FFF',
+    color: COLORS.black, // Dark text on bright primary usually reads better if primary is light, else white
+    fontWeight: 'bold',
   },
   formContainer: {
     flex: 1,
     padding: 10,
-    backgroundColor: COLORS.headerBg,
+    backgroundColor: COLORS.background, // Should match main bg
   },
   inputWrapper: {
-    backgroundColor: '#FFF',
+    backgroundColor: COLORS.surface,
     borderWidth: 1,
-    borderColor: '#CCC',
-    borderRadius: 4,
-    padding: 10,
-    marginBottom: 8,
+    borderColor: COLORS.border,
+    borderRadius: 8,
+    padding: 12,
+    marginBottom: 10,
     flexDirection: 'row',
     justifyContent: 'space-between',
+    alignItems: 'center'
   },
   inputText: {
     fontSize: 16,
-    color: '#333',
+    color: COLORS.textPrimary,
+    fontWeight: '500'
   },
   checkboxRow: {
     flexDirection: 'row',
-    marginBottom: 10,
+    marginBottom: 15,
+    justifyContent: 'space-around'
   },
   inputsRow: {
     flexDirection: 'row',
-    marginBottom: 10,
+    marginBottom: 15,
+    gap: 10
   },
   inputField: {
-    backgroundColor: '#FFF',
+    backgroundColor: COLORS.surface,
     borderWidth: 1,
-    borderColor: '#CCC',
-    borderRadius: 4,
-    padding: 10,
-    fontSize: 16,
+    borderColor: COLORS.border,
+    borderRadius: 8,
+    padding: 12,
+    fontSize: 18,
+    color: COLORS.textPrimary,
+    justifyContent: 'center'
   },
   actionRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
+    marginBottom: 10
   },
   actionBtn: {
     flex: 1,
-    paddingVertical: 12,
-    marginHorizontal: 2,
+    paddingVertical: 14,
+    marginHorizontal: 3,
     alignItems: 'center',
-    borderRadius: 2,
+    borderRadius: 8,
+    elevation: 2
   },
   actionBtnText: {
-    color: '#FFF',
+    color: COLORS.white,
     fontWeight: 'bold',
-    fontSize: 14,
+    fontSize: 15,
   },
   listContainer: {
     flex: 1,
-    backgroundColor: '#FFF',
+    backgroundColor: COLORS.surface,
+    borderRadius: 10,
     padding: 5,
+    marginBottom: 5,
+    borderWidth: 1,
+    borderColor: COLORS.border
   },
   ticketRow: {
     flexDirection: 'row',
-    paddingVertical: 10,
+    paddingVertical: 12,
     borderBottomWidth: 1,
-    borderBottomColor: '#EEE',
+    borderBottomColor: COLORS.border,
     alignItems: 'center',
+    paddingHorizontal: 5
   },
   ticketText: {
     fontSize: 16,
-    fontWeight: 'bold',
+    fontWeight: '600',
+    color: COLORS.textPrimary
   }
 });
