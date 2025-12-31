@@ -114,6 +114,47 @@ export const ticketService = {
         return rateMap;
     },
 
+    // 3.1 Update User Rates
+    async updateUserRates(targetUserId, ratesMap) {
+        // 1. Get Target User
+        const { data: user } = await supabase.from('users').select('scheme_id, username').eq('id', targetUserId).single();
+        if (!user) return { error: 'User not found' };
+
+        let schemeId = user.scheme_id;
+
+        // 2. If no scheme, create one (Assuming 'schemes' table exists)
+        if (!schemeId) {
+            const { data: newScheme, error: schemeError } = await supabase
+                .from('schemes')
+                .insert([{ name: `Scheme for ${user.username}` }])
+                .select('id')
+                .single();
+
+            if (schemeError) {
+                // Fallback: If table scheme is different, maybe we just need ID? 
+                // Or schemes table doesn't exist? But getUserRates queries scheme_rates.
+                console.error('Scheme creation failed', schemeError);
+                return { error: 'Failed to create scheme. Contact Admin.' };
+            }
+            schemeId = newScheme.id;
+
+            // Link to user
+            await supabase.from('users').update({ scheme_id: schemeId }).eq('id', targetUserId);
+        }
+
+        // 3. Upsert Rates
+        const updates = Object.keys(ratesMap).map(type => ({
+            scheme_id: schemeId,
+            ticket_type: type,
+            buy_rate: parseFloat(ratesMap[type])
+        }));
+
+        const { error: rateError } = await supabase.from('scheme_rates').upsert(updates, { onConflict: 'scheme_id, ticket_type' });
+
+        if (rateError) return { error: rateError.message };
+        return { data: true, error: null };
+    },
+
     // 4. Helper: Check Limits
     async checkLimits(userId, newTickets, totalCost) {
         // A. Check Daily Sales Limit

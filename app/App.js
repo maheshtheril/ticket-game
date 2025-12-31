@@ -66,6 +66,7 @@ export default function App() {
   });
 
   const [rates, setRates] = useState({}); // Store user rates
+  const [assignedRates, setAssignedRates] = useState({}); // New rates for sub-user
   const [isMenuOpen, setIsMenuOpen] = useState(false); // Side Menu State
   const [menuAnim] = useState(new Animated.Value(-300)); // Slide animation
 
@@ -102,7 +103,22 @@ export default function App() {
 
     // 2. Get Sub-Users for Dropdown
     const { data: subs } = await ticketService.getSubUsers(agent.id);
-    if (subs) setSubUsers(subs);
+    setSubUsers(subs); // Use fetched subs
+    if (subs.length > 0) setSelectedSubUser(null); // Reset selection
+  };
+
+  const handleSaveRates = async () => {
+    if (!selectedSubUser) { alert('Please select a customer first'); return; }
+
+    // Merge existing rates with updates, or just send updates? Service handles upsert.
+    // Validate? (Assigned > My Rate) - Optional but good.
+
+    const { error } = await ticketService.updateUserRates(selectedSubUser.id, assignedRates);
+    if (error) alert('Error saving rates: ' + error);
+    else {
+      alert('Rates updated successfully for ' + selectedSubUser.username);
+      setAssignedRates({}); // Clear
+    }
   };
 
   const loadGames = async () => {
@@ -153,8 +169,7 @@ export default function App() {
       // The keypad 'Save' likely means "Add to List" or "Buy"?
       // Screenshot has separate "Add" button usually? No, screenshot shows "Save" on keypad.
       // It likely submits the current number input as a ticket.
-      // We'll assume it defaults to adding 'ALL' or currently selected Tab logic?
-      // For now, let's map it to 'ALL' to be safe or maybe just triggers the primary action.
+      // We'll assume it defaults to 'ALL' to be safe or maybe just triggers the primary action.
       handleAddTicket('ALL');
       return;
     }
@@ -596,6 +611,7 @@ export default function App() {
           { label: 'Box', key: 'triple_box', payout: '3000' },
         ].map((item, index) => {
           const rate = rates[item.key] || 10.0;
+          const assignedVal = assignedRates[item.key] || '';
           return (
             <View key={index} style={{ flexDirection: 'row', paddingVertical: 12, borderBottomWidth: 1, borderBottomColor: '#F5F5F5', alignItems: 'center' }}>
               <Text style={{ flex: 1.5, fontSize: 16, color: '#333', fontWeight: '500' }}>{item.label}</Text>
@@ -604,6 +620,8 @@ export default function App() {
                 <TextInput
                   style={{ borderWidth: 1, borderColor: '#CCC', borderRadius: 4, padding: 5, textAlign: 'center', height: 40 }}
                   placeholder={String(rate)}
+                  value={assignedVal}
+                  onChangeText={txt => setAssignedRates(prev => ({ ...prev, [item.key]: txt }))}
                   keyboardType="numeric"
                 />
               </View>
@@ -617,7 +635,10 @@ export default function App() {
           <Checkbox label="Apply All Games" checked={true} onPress={() => { }} />
         </View>
 
-        <TouchableOpacity style={{ backgroundColor: COLORS.primary, padding: 15, borderRadius: 5, alignItems: 'center' }}>
+        <TouchableOpacity
+          style={{ backgroundColor: COLORS.primary, padding: 15, borderRadius: 5, alignItems: 'center' }}
+          onPress={handleSaveRates}
+        >
           <Text style={{ color: '#FFF', fontWeight: 'bold', fontSize: 18 }}>Save</Text>
         </TouchableOpacity>
       </View>
