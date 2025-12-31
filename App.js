@@ -16,7 +16,7 @@ import { ticketService } from './services/ticketService'; // Using the Mock serv
 
 export default function App() {
   const [tickets, setTickets] = useState([]);
-  const [currentTab, setCurrentTab] = useState(2);
+  const [currentTab, setCurrentTab] = useState(3); // Default Tab 3
   const [games, setGames] = useState([]);
   const [selectedGame, setSelectedGame] = useState('DEAR-1 PM');
   const [agent, setAgent] = useState('demo_agent');
@@ -32,12 +32,12 @@ export default function App() {
 
   const [checks, setChecks] = useState({
     any: false,
-    set: false,
+    set: false, // Set logic
     c100: false,
     c111: false
   });
 
-  // Load Games (Mock)
+  // ... (Load Games Effect omitted for brevity, logic unchanged) ...
   React.useEffect(() => {
     loadGames();
   }, []);
@@ -62,9 +62,19 @@ export default function App() {
   const totalRs = tickets.reduce((sum, t) => sum + (t.total || 0), 0);
 
   const handleKeyPress = (key) => {
-    if (key === 'BACK') return;
-    if (key === 'NEXT') return;
+    if (key === 'BACK') return; // Handled by standard backspace button if exists
+    if (key === 'NEXT') return; // Handled by next button
 
+    // Handle Backspace / Delete
+    if (key === 'X') {
+      if (focusedField === 'number') setNumber(prev => prev.slice(0, -1));
+      if (focusedField === 'start') setStartNumber(prev => prev.slice(0, -1));
+      if (focusedField === 'end') setEndNumber(prev => prev.slice(0, -1));
+      if (focusedField === 'count') setCount(prev => prev.slice(0, -1));
+      return;
+    }
+
+    // Normal Input
     if (focusedField === 'number') {
       if (number.length >= maxNumberLength) return;
       const newNum = number + key;
@@ -95,14 +105,51 @@ export default function App() {
 
   const handleTabChange = (tab) => {
     setCurrentTab(tab);
-    setNumber('');
+    setNumber(''); updateChecks('none'); // Reset checks on tab change
     setCount('');
     setFocusedField('number');
   };
 
+  const updateChecks = (type) => {
+    if (type === 'none') {
+      setChecks({ any: false, set: false, c100: false, c111: false });
+      return;
+    }
+    // Mutually exclusive logic: if 'any' is checked, 'set' is unchecked, etc.
+    setChecks(prev => {
+      const newState = { ...prev, [type]: !prev[type] };
+      // Enforce exclusivity if needed, for now mainly Any vs Set
+      if (type === 'any' && newState.any) newState.set = false;
+      if (type === 'set' && newState.set) newState.any = false;
+
+      // Reset fields when switching modes
+      if (type === 'any') {
+        setNumber(''); setStartNumber(''); setEndNumber('');
+        setFocusedField(newState.any ? 'start' : 'number');
+      }
+      return newState;
+    });
+  };
+
+  // Permutation Helper
+  const getPermutations = (str) => {
+    if (str.length <= 1) return [str];
+    const allPerms = getPermutations(str.slice(1));
+    const firstChar = str[0];
+    const newPerms = [];
+    allPerms.forEach(perm => {
+      for (let i = 0; i <= perm.length; i++) {
+        newPerms.push(perm.substring(0, i) + firstChar + perm.substring(i));
+      }
+    });
+    return [...new Set(newPerms)]; // Unique permutations only
+  };
+
   const handleAddTicket = (typeLabel) => {
-    // Validation
     const isAny = checks.any;
+    const isSet = checks.set;
+
+    // Validation
     if (isAny) {
       if (!startNumber || !endNumber || !count) return;
     } else {
@@ -110,18 +157,27 @@ export default function App() {
     }
 
     let ticketsToCreate = [];
+    let numbersToProcess = [];
 
-    // Determine loop range
-    let loopStart, loopEnd;
+    // 1. Determine Numbers List
     if (isAny) {
-      loopStart = parseInt(startNumber);
-      loopEnd = parseInt(endNumber);
+      let loopStart = parseInt(startNumber);
+      let loopEnd = parseInt(endNumber);
       if (isNaN(loopStart) || isNaN(loopEnd) || loopStart > loopEnd) {
-        alert('Invalid Range');
-        return;
+        alert('Invalid Range'); return;
       }
+      for (let i = loopStart; i <= loopEnd; i++) {
+        numbersToProcess.push(i.toString().padStart(maxNumberLength, '0'));
+      }
+    } else if (isSet) {
+      // Generate Permutations
+      numbersToProcess = getPermutations(number);
+    } else {
+      // Single Number
+      numbersToProcess = [number];
     }
 
+    // 2. Determine Types
     let typesToAdd = [];
     if (typeLabel === 'ALL') {
       if (currentTab === 1) typesToAdd = [btnLabels.A, btnLabels.B, btnLabels.C];
@@ -131,28 +187,20 @@ export default function App() {
       typesToAdd = [typeLabel];
     }
 
-    // Generate Tickets
-    const generateForNumber = (numStr) => {
-      return typesToAdd.map(type => ({
-        id: Date.now().toString() + Math.random(),
-        name: selectedGame.replace('D-', '').split(':')[0] + ' ' + type,
-        number: numStr,
-        count: count,
-        total: parseInt(count) * 10,
-        boxType: type,
-        color: getTypeColor(type)
-      }));
-    };
-
-    if (isAny) {
-      for (let i = loopStart; i <= loopEnd; i++) {
-        // Pad with leading zeros if needed based on maxNumberLength
-        let numStr = i.toString().padStart(maxNumberLength, '0');
-        ticketsToCreate = [...ticketsToCreate, ...generateForNumber(numStr)];
-      }
-    } else {
-      ticketsToCreate = generateForNumber(number);
-    }
+    // 3. Generate Tickets
+    numbersToProcess.forEach(numStr => {
+      typesToAdd.forEach(type => {
+        ticketsToCreate.push({
+          id: Date.now().toString() + Math.random(),
+          name: selectedGame.replace('D-', '').split(':')[0] + ' ' + type,
+          number: numStr,
+          count: count,
+          total: parseInt(count) * 10,
+          boxType: type,
+          color: getTypeColor(type)
+        });
+      });
+    });
 
     setTickets([...ticketsToCreate, ...tickets]);
     handleClear();
@@ -171,10 +219,8 @@ export default function App() {
       alert('No tickets to save!');
       return;
     }
-
     // Mock Save
     const { error } = await ticketService.buyTicket(tickets, 1);
-
     if (error) {
       alert('Error saving: ' + error.message);
     } else {
@@ -233,14 +279,13 @@ export default function App() {
           <Checkbox
             label="Any"
             checked={checks.any}
-            onPress={() => {
-              const newVal = !checks.any;
-              setChecks(p => ({ ...p, any: newVal }));
-              setFocusedField(newVal ? 'start' : 'number');
-              setNumber(''); setStartNumber(''); setEndNumber('');
-            }}
+            onPress={() => updateChecks('any')}
           />
-          <Checkbox label="Set" checked={checks.set} />
+          <Checkbox
+            label="Set"
+            checked={checks.set}
+            onPress={() => updateChecks('set')}
+          />
           <Checkbox label="100" checked={checks.c100} />
           <Checkbox label="111" checked={checks.c111} />
         </View>
