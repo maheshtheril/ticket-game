@@ -65,6 +65,8 @@ export default function App() {
     c111: false
   });
 
+  const [rates, setRates] = useState({}); // Store user rates
+
   // Load Games (Real)
 
   React.useEffect(() => {
@@ -86,6 +88,16 @@ export default function App() {
       const allUsers = [agent, ...data];
       setSubUsers(allUsers);
       setSelectedSubUser(agent); // Default to self
+    }
+  };
+
+  const loadRates = async () => {
+    if (!agent) return;
+    const { data } = await ticketService.getUserRates(agent.id);
+    if (data) {
+      // Flatten or format if needed based on ticketService return
+      // ticketService.getUserRates returns object like { 'triple_straight': 11.0, ... }
+      setRates(data);
     }
   };
 
@@ -545,6 +557,7 @@ export default function App() {
 
       {/* Content Area */}
       {currentView === 'dashboard' && renderDashboard()}
+      {currentView === 'rates' && renderRates()}
 
       {currentView === 'game' && (
         <View style={{ flex: 1 }}>
