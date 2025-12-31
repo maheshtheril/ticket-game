@@ -571,6 +571,94 @@ export default function App() {
     </View>
   );
 
+  const renderUsers = () => {
+    if (editingUser) return renderUserDetail();
+
+    return (
+      <View style={{ flex: 1, padding: 20 }}>
+        <Text style={{ fontSize: 20, fontWeight: 'bold', marginBottom: 20, color: COLORS.primary }}>
+          Create Sub-User
+        </Text>
+
+        <Text style={{ marginBottom: 5 }}>New Username:</Text>
+        <TextInput
+          style={styles.inputField}
+          value={newUsername} onChangeText={setNewUsername}
+          placeholder="Username" autoCapitalize="none"
+        />
+
+        <Text style={{ marginBottom: 5, marginTop: 10 }}>New Password:</Text>
+        <TextInput
+          style={styles.inputField}
+          value={newPassword} onChangeText={setNewPassword}
+          placeholder="Password"
+        />
+
+        <Text style={{ marginBottom: 5, marginTop: 10 }}>Initial Balance:</Text>
+        <TextInput
+          style={styles.inputField}
+          value={newBalance} onChangeText={setNewBalance}
+          placeholder="0.00" keyboardType="numeric"
+        />
+
+        <TouchableOpacity
+          style={{
+            backgroundColor: COLORS.btnGreen, padding: 15, borderRadius: 5,
+            marginTop: 20, alignItems: 'center'
+          }}
+          onPress={async () => {
+            if (!newUsername || !newPassword) { alert('Fill all fields'); return; }
+
+            const { data, error } = await ticketService.createUser(
+              agent, newUsername.trim(), newPassword.trim(), newBalance
+            );
+
+            if (error) alert('Error: ' + error);
+            else {
+              alert(`Success! Created User: ${data.username} (${data.role})`);
+              setNewUsername(''); setNewPassword(''); setNewBalance('');
+              loadSubUsers();
+            }
+          }}
+        >
+          <Text style={{ color: '#FFF', fontWeight: 'bold' }}>CREATE USER</Text>
+        </TouchableOpacity>
+
+        {/* Existing Users List */}
+        <View style={{ marginTop: 30 }}>
+          <Text style={{ fontSize: 18, fontWeight: 'bold', marginBottom: 10, color: '#333' }}>Existing Customers</Text>
+          {subUsers && subUsers.length > 0 ? subUsers.map((user, i) => (
+            <View key={user.id} style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingVertical: 15, borderBottomWidth: 1, borderBottomColor: '#EEE' }}>
+              <View>
+                <Text style={{ fontSize: 18, fontWeight: 'bold', color: user.is_active ? '#333' : 'red' }}>{user.username}</Text>
+                <Text style={{ color: '#666' }}>Role: {user.role}</Text>
+              </View>
+              <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                <Text style={{ fontWeight: 'bold', color: COLORS.primary, marginRight: 15 }}>₹{user.balance}</Text>
+                <TouchableOpacity onPress={() => {
+                  setEditingUser(user);
+                  setEditIsActive(user.is_active);
+                  setEditLimits({ daily: '', single: '' });
+                }}>
+                  <Ionicons name="create-outline" size={24} color="#555" />
+                </TouchableOpacity>
+              </View>
+            </View>
+          )) : <Text>No customers found.</Text>}
+        </View>
+
+        <View style={{ marginTop: 20, borderTopWidth: 1, borderTopColor: '#CCC', paddingTop: 20 }}>
+          <TouchableOpacity
+            style={[styles.actionButton, { backgroundColor: COLORS.secondary }]}
+            onPress={() => { setCurrentView('rates'); loadRates(); }}
+          >
+            <Text style={[styles.actionButtonText, { textAlign: 'center' }]}>My Rates (Rate Master)</Text>
+          </TouchableOpacity>
+        </View>
+      </View>
+    );
+  };
+
   const renderPrizes = () => {
     const prizeData = [
       { name: 'First', rate: '5000', super: '400' },
@@ -932,65 +1020,7 @@ export default function App() {
       )}
 
       {/* VIEW: USER MANAGEMENT */}
-      {currentView === 'users' && (
-        <View style={styles.formContainer}>
-          <Text style={{ fontSize: 20, fontWeight: 'bold', marginBottom: 20, color: COLORS.primary }}>
-            Create Sub-User
-          </Text>
-
-          <Text style={{ marginBottom: 5 }}>New Username:</Text>
-          <TextInput
-            style={styles.inputField}
-            value={newUsername} onChangeText={setNewUsername}
-            placeholder="Username" autoCapitalize="none"
-          />
-
-          <Text style={{ marginBottom: 5, marginTop: 10 }}>New Password:</Text>
-          <TextInput
-            style={styles.inputField}
-            value={newPassword} onChangeText={setNewPassword}
-            placeholder="Password"
-          />
-
-          <Text style={{ marginBottom: 5, marginTop: 10 }}>Initial Balance:</Text>
-          <TextInput
-            style={styles.inputField}
-            value={newBalance} onChangeText={setNewBalance}
-            placeholder="0.00" keyboardType="numeric"
-          />
-
-          <TouchableOpacity
-            style={{
-              backgroundColor: COLORS.btnGreen, padding: 15, borderRadius: 5,
-              marginTop: 20, alignItems: 'center'
-            }}
-            onPress={async () => {
-              if (!newUsername || !newPassword) { alert('Fill all fields'); return; }
-
-              const { data, error } = await ticketService.createUser(
-                agent, newUsername.trim(), newPassword.trim(), newBalance
-              );
-
-              if (error) alert('Error: ' + error);
-              else {
-                alert(`Success! Created User: ${data.username} (${data.role})`);
-                setNewUsername(''); setNewPassword(''); setNewBalance('');
-              }
-            }}
-          >
-            <Text style={{ color: '#FFF', fontWeight: 'bold' }}>CREATE USER</Text>
-          </TouchableOpacity>
-
-          <View style={{ marginTop: 20, borderTopWidth: 1, borderTopColor: '#CCC', paddingTop: 20 }}>
-            <TouchableOpacity
-              style={[styles.actionButton, { backgroundColor: COLORS.secondary }]}
-              onPress={() => { setCurrentView('rates'); loadRates(); }}
-            >
-              <Text style={[styles.actionButtonText, { textAlign: 'center' }]}>My Rates (Rate Master)</Text>
-            </TouchableOpacity>
-          </View>
-        </View>
-      )}
+      {currentView === 'users' && renderUsers()}
 
       {currentView === 'results' && (
         <View style={styles.formContainer}>
