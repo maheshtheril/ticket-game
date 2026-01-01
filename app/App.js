@@ -1102,8 +1102,9 @@ export default function App() {
       { label: 'Box', key: 'box' },
     ];
 
+
     return (
-      <View style={{ flex: 1, padding: 20 }}>
+      <ScrollView style={{ flex: 1, padding: 20 }}>
         {/* Header */}
         <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 20 }}>
           <TouchableOpacity onPress={() => setCurrentView('users')}>
