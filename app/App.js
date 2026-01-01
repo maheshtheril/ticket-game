@@ -940,16 +940,16 @@ export default function App() {
                   const assignCommVal = storedRate.comm !== undefined ? storedRate.comm : myComm.toString();
 
                   return (
-                    <View key={k} style={{ flexDirection: 'row', paddingVertical: 12, alignItems: 'center', borderBottomWidth: 1, borderBottomColor: '#f0f0f0' }}>
-                      <Text style={{ flex: 1.5, fontSize: 14 }}>{item.label}</Text>
+                    <View key={k} style={{ flexDirection: 'row', paddingVertical: 8, alignItems: 'center', borderBottomWidth: 1, borderBottomColor: '#E0E0E0' }}>
+                      <Text style={{ flex: 2, fontSize: 14, fontWeight: '500', paddingLeft: 5 }}>{item.label}</Text>
                       <TextInput
-                        style={{ flex: 1, borderWidth: 1, borderColor: '#CCC', padding: 4, marginRight: 5, textAlign: 'center', backgroundColor: '#FAFAFA' }}
+                        style={{ flex: 1, borderWidth: 1, borderColor: '#D1D5DB', paddingVertical: 4, paddingHorizontal: 2, marginRight: 8, textAlign: 'center', borderRadius: 4, backgroundColor: '#FFF', color: '#333' }}
                         value={assignPrizeVal}
                         onChangeText={t => updateRate(k, 'payout', t)}
                         keyboardType="numeric"
                       />
                       <TextInput
-                        style={{ flex: 1, borderWidth: 1, borderColor: '#CCC', padding: 4, textAlign: 'center', backgroundColor: '#FAFAFA' }}
+                        style={{ flex: 1, borderWidth: 1, borderColor: '#D1D5DB', paddingVertical: 4, paddingHorizontal: 2, textAlign: 'center', borderRadius: 4, backgroundColor: '#FFF', color: '#333' }}
                         value={assignCommVal}
                         onChangeText={t => updateRate(k, 'comm', t)}
                         keyboardType="numeric"
