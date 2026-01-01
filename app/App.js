@@ -1158,19 +1158,23 @@ export default function App() {
   const renderAdminPanel = () => {
     const [adminTab, setAdminTab] = useState('draws');
     const [allGames, setAllGames] = useState([]);
-    // We can reuse the main agent's LIMITS form logic for Global Keys if we want
-    // But for now, let's keep it simple or strictly strictly separated.
-    // Since Admin *is* the root, editing Admin's limits is "Global Limits".
-    // We can just link to "Edit My Profile" -> Limits tab? 
-    // User requested "Admin only view and edit", implying they want it separate. 
-    // Let's replicate the Limit UI here for clarity.
+
+    // Time Settings State
+    const [viewMode, setViewMode] = useState('list'); // 'list' or 'timeSettings'
+    const [editingGame, setEditingGame] = useState(null);
+    const [timeForm, setTimeForm] = useState({
+      closeTime: '',
+      fillTime: '',
+      deletionTime: '',
+      openTime: ''
+    });
 
     useEffect(() => {
       loadAllGames();
     }, []);
 
     const loadAllGames = async () => {
-      const { data } = await ticketService.getActiveGames(); // This actually fetches all games order by time
+      const { data } = await ticketService.getActiveGames();
       setAllGames(data || []);
     };
 
@@ -1179,6 +1183,105 @@ export default function App() {
       if (error) alert('Error updating game');
       else loadAllGames();
     };
+
+    const openTimeSettings = (game) => {
+      setEditingGame(game);
+      setTimeForm({
+        closeTime: game.close_time || '',
+        fillTime: game.fill_time || '',
+        deletionTime: game.deletion_time || '',
+        openTime: game.open_time || ''
+      });
+      setViewMode('timeSettings');
+    };
+
+    const handleSaveTimeSettings = async () => {
+      const { error } = await ticketService.updateGameSettings(editingGame.id, {
+        close_time: timeForm.closeTime,
+        fill_time: timeForm.fillTime,
+        deletion_time: timeForm.deletionTime,
+        open_time: timeForm.openTime
+      });
+
+      if (error) alert('Error: ' + error.message);
+      else {
+        alert('Updated Successfully');
+        loadAllGames();
+        setViewMode('list');
+      }
+    };
+
+    if (viewMode === 'timeSettings') {
+      const drawTimeStr = new Date(editingGame.draw_time).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: true });
+
+      return (
+        <View style={{ flex: 1, backgroundColor: '#F5F5F5' }}>
+          {/* Header for Time Settings */}
+          <View style={{ height: 60, backgroundColor: '#3ca0d0', flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 15, elevation: 4 }}>
+            <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+              <TouchableOpacity onPress={() => setViewMode('list')}>
+                <Ionicons name="menu" size={28} color="#FFF" style={{ marginRight: 15 }} />
+              </TouchableOpacity>
+              <Text style={{ fontSize: 20, color: '#FFF' }}>Time Limit <Text style={{ fontSize: 16, color: '#DDD' }}>{drawTimeStr}</Text></Text>
+            </View>
+            <Ionicons name="flag-outline" size={24} color="#FFF" />
+          </View>
+
+          <ScrollView style={{ flex: 1, padding: 15 }}>
+            <Text style={{ fontSize: 18, color: '#555', marginBottom: 20, borderBottomWidth: 1, borderBottomColor: '#CCC', paddingBottom: 10 }}>Time Settings</Text>
+
+            <View style={{ marginBottom: 15 }}>
+              <Text style={{ fontWeight: 'bold', fontSize: 16, color: '#333' }}>Close Time</Text>
+              <TextInput
+                style={{ borderWidth: 1, borderColor: '#3ca0d0', padding: 8, marginTop: 5, borderRadius: 2, backgroundColor: '#FFF' }}
+                value={timeForm.closeTime}
+                onChangeText={t => setTimeForm({ ...timeForm, closeTime: t })}
+              />
+              <Text style={{ color: '#888', marginTop: 5 }}>Now Booking Closing @ {timeForm.closeTime || 'Not Set'}</Text>
+            </View>
+
+            <View style={{ marginBottom: 15 }}>
+              <Text style={{ fontWeight: 'bold', fontSize: 16, color: '#333' }}>Fill Time</Text>
+              <TextInput
+                style={{ borderWidth: 1, borderColor: '#3ca0d0', padding: 8, marginTop: 5, borderRadius: 2, backgroundColor: '#FFF' }}
+                value={timeForm.fillTime}
+                onChangeText={t => setTimeForm({ ...timeForm, fillTime: t })}
+              />
+              <Text style={{ color: '#888', marginTop: 5 }}>Now fill time @ {timeForm.fillTime || 'Not Set'}</Text>
+            </View>
+
+            <View style={{ marginBottom: 15 }}>
+              <Text style={{ fontWeight: 'bold', fontSize: 16, color: '#333' }}>Last Deletion Time</Text>
+              <TextInput
+                style={{ borderWidth: 1, borderColor: '#3ca0d0', padding: 8, marginTop: 5, borderRadius: 2, backgroundColor: '#FFF' }}
+                value={timeForm.deletionTime}
+                onChangeText={t => setTimeForm({ ...timeForm, deletionTime: t })}
+              />
+              <Text style={{ color: '#888', marginTop: 5 }}>Now deletion time @ {timeForm.deletionTime || 'Not Set'}</Text>
+            </View>
+
+            <View style={{ marginBottom: 15 }}>
+              <Text style={{ fontWeight: 'bold', fontSize: 16, color: '#333' }}>Open Time</Text>
+              <TextInput
+                style={{ borderWidth: 1, borderColor: '#3ca0d0', padding: 8, marginTop: 5, borderRadius: 2, backgroundColor: '#FFF' }}
+                value={timeForm.openTime}
+                onChangeText={t => setTimeForm({ ...timeForm, openTime: t })}
+              />
+              <Text style={{ color: '#888', marginTop: 5 }}>Now Booking open @ {timeForm.openTime || 'Not Set'}</Text>
+            </View>
+
+            <View style={{ flexDirection: 'row', gap: 10, marginTop: 20 }}>
+              <TouchableOpacity style={{ backgroundColor: '#3ca0d0', paddingVertical: 10, paddingHorizontal: 20, borderRadius: 4 }} onPress={handleSaveTimeSettings}>
+                <Text style={{ color: '#FFF', fontSize: 16 }}>Update</Text>
+              </TouchableOpacity>
+              <TouchableOpacity style={{ backgroundColor: '#3ca0d0', paddingVertical: 10, paddingHorizontal: 20, borderRadius: 4 }} onPress={() => setViewMode('list')}>
+                <Text style={{ color: '#FFF', fontSize: 16 }}>Back</Text>
+              </TouchableOpacity>
+            </View>
+          </ScrollView>
+        </View>
+      );
+    }
 
     return (
       <View style={{ flex: 1, backgroundColor: '#F5F5F5' }}>
@@ -1216,12 +1319,17 @@ export default function App() {
                     <Text style={{ fontWeight: 'bold', fontSize: 16 }}>{g.name || 'Draw'}</Text>
                     <Text style={{ color: '#666' }}>{new Date(g.draw_time).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</Text>
                   </View>
-                  <Switch
-                    value={g.is_active}
-                    onValueChange={() => toggleGame(g.id, g.is_active)}
-                    trackColor={{ false: "#767577", true: "#81b0ff" }}
-                    thumbColor={g.is_active ? "#2196F3" : "#f4f3f4"}
-                  />
+                  <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
+                    <TouchableOpacity onPress={() => openTimeSettings(g)}>
+                      <Ionicons name="time-outline" size={24} color="#607D8B" />
+                    </TouchableOpacity>
+                    <Switch
+                      value={g.is_active}
+                      onValueChange={() => toggleGame(g.id, g.is_active)}
+                      trackColor={{ false: "#767577", true: "#81b0ff" }}
+                      thumbColor={g.is_active ? "#2196F3" : "#f4f3f4"}
+                    />
+                  </View>
                 </View>
               ))}
             </ScrollView>

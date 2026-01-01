@@ -163,6 +163,14 @@ export const ticketService = {
         return { error };
     },
 
+    async updateGameSettings(gameId, settings) {
+        const { error } = await supabase
+            .from('game_schedules')
+            .update(settings)
+            .eq('id', gameId);
+        return { error };
+    },
+
     // 3. Helper: Get User Scheme Rates
     async getUserRates(userId) {
         // Get user's scheme_id
