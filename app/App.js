@@ -1161,9 +1161,9 @@ export default function App() {
             )}
           </View>
 
+
           {/* Rate Table */}
           {/* ... existing rate table logic ... */}
-        </View>
       </ScrollView>
     );
   };
