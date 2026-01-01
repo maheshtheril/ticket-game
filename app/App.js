@@ -1146,7 +1146,6 @@ export default function App() {
                 />
               </View>
             )}
-            )}
           </View>
 
           {/* Rate Table */}
@@ -1287,18 +1286,18 @@ const renderRates = () => {
   return (
     <View style={{ flex: 1, backgroundColor: '#F5F5F5' }}>
       {/* Header */}
-      <View style={{ padding: 15, backgroundColor: '#FFF', flexDirection: 'row', alignItems: 'center' }}>
+      <View style={{ padding: 15, backgroundColor: '#FFF', flexDirection: 'row', alignItems: 'center', elevation: 2 }}>
         <TouchableOpacity onPress={() => setCurrentView('dashboard')}>
           <Ionicons name="arrow-back" size={24} color="#333" />
         </TouchableOpacity>
         <Text style={{ fontSize: 20, fontWeight: 'bold', marginLeft: 10 }}>Rate Master</Text>
       </View>
 
-      <View style={{ padding: 15 }}>
+      <ScrollView style={{ flex: 1 }} contentContainerStyle={{ padding: 15 }}>
         {/* User Selection Dropdown */}
         <View style={{ marginBottom: 20, zIndex: 1000 }}>
           <TouchableOpacity
-            style={{ borderBottomWidth: 1, borderBottomColor: '#CCC', paddingVertical: 10, flexDirection: 'row', justifyContent: 'space-between', backgroundColor: '#FFF', paddingHorizontal: 10 }}
+            style={{ borderBottomWidth: 1, borderBottomColor: '#CCC', paddingVertical: 10, flexDirection: 'row', justifyContent: 'space-between', backgroundColor: '#FFF', paddingHorizontal: 10, borderRadius: 4 }}
             onPress={() => setIsAgentDropdownOpen(!isAgentDropdownOpen)}
           >
             <Text style={{ fontSize: 16, color: '#333' }}>
@@ -1309,24 +1308,20 @@ const renderRates = () => {
 
           {isAgentDropdownOpen && (
             <View style={{
-              position: 'absolute', top: '100%', left: 0, right: 0,
               backgroundColor: '#FFF', borderWidth: 1, borderColor: '#CCC',
-              elevation: 5, maxHeight: 200
+              elevation: 5, maxHeight: 200, marginTop: 5
             }}>
               <FlatList
                 data={subUsers}
                 keyExtractor={item => item.id.toString()}
+                nestedScrollEnabled={true}
                 renderItem={({ item }) => (
                   <TouchableOpacity
                     style={{ padding: 15, borderBottomWidth: 1, borderBottomColor: '#EEE' }}
                     onPress={async () => {
                       setSelectedSubUser(item);
                       setIsAgentDropdownOpen(false);
-                      // Fetch Sub User Rates to populate "Assign Rate"
-                      // getUserRates now returns objects { buy_rate, commission, payout }
-                      // We need to parse just the buy_rate for this view, or handle object.
                       const { data: subRates } = await ticketService.getUserRates(item.id);
-                      // map { single: { buy_rate: 10 } } -> { single: 10 } for the input
                       const simpleRates = {};
                       if (subRates) {
                         Object.keys(subRates).forEach(k => {
@@ -1349,7 +1344,7 @@ const renderRates = () => {
         <Text style={{ fontWeight: 'bold', fontSize: 16, marginBottom: 10, color: '#333' }}>Ticket Price details</Text>
 
         {/* Table */}
-        <View style={{ backgroundColor: '#FFF', elevation: 1, borderRadius: 4 }}>
+        <View style={{ backgroundColor: '#FFF', elevation: 1, borderRadius: 4, marginBottom: 80 }}>
           <View style={{ flexDirection: 'row', backgroundColor: '#9E9E9E', padding: 10, borderTopLeftRadius: 4, borderTopRightRadius: 4 }}>
             <Text style={{ flex: 1.5, color: '#FFF', fontWeight: 'bold' }}>Ticket</Text>
             <Text style={{ flex: 1, color: '#FFF', fontWeight: 'bold' }}>Rate</Text>
@@ -1386,23 +1381,23 @@ const renderRates = () => {
             );
           })}
         </View>
+      </ScrollView>
 
-        {/* Save Button */}
+      {/* Sticky Footer Save Button */}
+      <View style={{ padding: 15, backgroundColor: '#FFF', elevation: 10 }}>
         <TouchableOpacity
           style={{
             backgroundColor: '#2962FF', padding: 15, alignItems: 'center',
-            justifyContent: 'center', marginTop: 20, borderRadius: 8
+            justifyContent: 'center', borderRadius: 8
           }}
           onPress={handleSaveRates}
         >
           <Text style={{ color: '#FFF', fontWeight: 'bold', fontSize: 18 }}>Save</Text>
         </TouchableOpacity>
-
       </View>
     </View>
   );
-    );
-  };
+};
 
 const renderPrizes = () => {
   const prizeData = [
