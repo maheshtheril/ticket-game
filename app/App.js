@@ -862,13 +862,18 @@ export default function App() {
               </View>
               {rateTypes.map((item) => {
                 const myRateObj = rates[item.key] || {};
-                const myPrize = parseFloat(myRateObj.payout || 0);
+
+                // Admin Defaults if missing
+                const defaultPrize = item.key === 'single' ? 95 : item.key === 'double' ? 950 : 5000;
+
+                const myPrize = parseFloat(myRateObj.payout || (agent.role === 'admin' ? defaultPrize : 0));
                 const myComm = parseFloat(myRateObj.commission || 0);
 
                 const storedRate = userForm.rates[item.key] || {};
-                // If new, default to 0 or My Prize? User said "above parent's should not be saved".
-                // So we can show My Prize as place holder but let user enter.
-                // OR default to current My Prize
+
+                // Default Assign value to My Prize if not yet edited (Pre-fill)
+                const assignPrizeVal = storedRate.payout !== undefined ? storedRate.payout : myPrize.toString();
+                const assignCommVal = storedRate.comm !== undefined ? storedRate.comm : myComm.toString();
 
                 return (
                   <View key={item.key} style={{ flexDirection: 'row', paddingVertical: 12, alignItems: 'center', borderBottomWidth: 1, borderBottomColor: '#f0f0f0' }}>
@@ -876,13 +881,13 @@ export default function App() {
                     <Text style={{ flex: 1, color: '#555' }}>{myPrize}</Text>
                     <TextInput
                       style={{ flex: 1.2, borderWidth: 1, borderColor: '#CCC', padding: 4, marginRight: 5, textAlign: 'center', backgroundColor: '#FAFAFA' }}
-                      value={storedRate.payout || myPrize.toString()}
+                      value={assignPrizeVal}
                       onChangeText={t => updateRate(item.key, 'payout', t)}
                       keyboardType="numeric"
                     />
                     <TextInput
                       style={{ flex: 1, borderWidth: 1, borderColor: '#CCC', padding: 4, textAlign: 'center', backgroundColor: '#FAFAFA' }}
-                      value={storedRate.comm || '0'}
+                      value={assignCommVal}
                       onChangeText={t => updateRate(item.key, 'comm', t)}
                       keyboardType="numeric"
                     />
