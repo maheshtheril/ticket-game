@@ -550,15 +550,38 @@ export default function App() {
   }
 
   const renderDashboard = () => (
+
+
+
     <View style={styles.formContainer}>
+      <View style={{ backgroundColor: 'yellow', padding: 5, marginBottom: 5 }}>
+        <Text style={{ color: 'red', fontWeight: 'bold', textAlign: 'center' }}>
+          DEBUG: User=[{agent?.username}] Role=[{agent?.role}] MatchesAdmin?={(agent?.role === 'admin' || agent?.username === 'admin').toString()}
+        </Text>
+      </View>
       <View style={{ gap: 15, padding: 10 }}>
+
+        {/* ADMIN PANEL - FORCED SHOW */}
+        <TouchableOpacity
+          style={[styles.dashboardBtnBlue, { backgroundColor: '#D32F2F', borderWidth: 2, borderColor: '#B71C1C' }]}
+          onPress={() => setCurrentView('adminPanel')}
+        >
+          <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'center' }}>
+            <Ionicons name="settings" size={32} color="#FFF" style={{ marginRight: 15 }} />
+            <View>
+              <Text style={{ color: '#FFF', fontWeight: 'bold', fontSize: 20 }}>ADMIN PANEL</Text>
+              <Text style={{ color: '#FFCDD2', fontSize: 14 }}>Manage Times & Games</Text>
+            </View>
+          </View>
+        </TouchableOpacity>
+
         <TouchableOpacity
           style={styles.dashboardBtnBlue}
           onPress={() => setCurrentView('game')}
         >
           <View style={{ flexDirection: 'row', alignItems: 'center' }}>
             <Ionicons name="add-outline" size={28} color="#FFF" style={{ marginRight: 15 }} />
-            <Text style={styles.dashboardBtnText}>Add</Text>
+            <Text style={styles.dashboardBtnText}>Add Ticket</Text>
           </View>
         </TouchableOpacity>
 
@@ -582,17 +605,6 @@ export default function App() {
           </View>
         </TouchableOpacity>
 
-        {(agent && (agent.role === 'admin' || agent.username === 'admin')) && (
-          <TouchableOpacity
-            style={[styles.dashboardBtnBlue, { backgroundColor: '#607D8B' }]}
-            onPress={() => setCurrentView('adminPanel')}
-          >
-            <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-              <Ionicons name="settings-outline" size={28} color="#FFF" style={{ marginRight: 15 }} />
-              <Text style={styles.dashboardBtnText}>Admin Panel</Text>
-            </View>
-          </TouchableOpacity>
-        )}
       </View>
     </View>
   );
@@ -1320,8 +1332,9 @@ export default function App() {
                     <Text style={{ color: '#666' }}>{new Date(g.draw_time).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</Text>
                   </View>
                   <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-                    <TouchableOpacity onPress={() => openTimeSettings(g)} style={{ marginRight: 15 }}>
-                      <Ionicons name="timer-outline" size={26} color="#607D8B" />
+                    <TouchableOpacity onPress={() => openTimeSettings(g)} style={{ marginRight: 15, flexDirection: 'row', alignItems: 'center', backgroundColor: '#E0F7FA', padding: 5, borderRadius: 4 }}>
+                      <Ionicons name="timer-outline" size={24} color="#006064" />
+                      <Text style={{ marginLeft: 5, color: '#006064', fontWeight: 'bold' }}>Time Settings</Text>
                     </TouchableOpacity>
                     <Switch
                       value={g.is_active}
