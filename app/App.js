@@ -770,41 +770,143 @@ export default function App() {
     );
   };
 
-  const renderRates = () => (
-    <View style={{ flex: 1, padding: 20 }}>
-      {/* Header */}
-      <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 20 }}>
-        <TouchableOpacity onPress={() => setCurrentView('users')}>
-          <Ionicons name="arrow-back" size={24} color="#333" />
-        </TouchableOpacity>
-        <Text style={{ fontSize: 24, fontWeight: 'bold', marginLeft: 10, color: '#333' }}>Rate Master</Text>
-      </View>
+  const renderRates = () => {
+    // 1. Prepare Data for Table
+    const rateTypes = [
+      { label: 'Single(1)', key: 'single' },
+      { label: 'Double(2)', key: 'double' },
+      { label: 'Triple', key: 'triple' },
+      { label: 'Quad', key: 'quad' },
+    ];
 
-      <View style={{ backgroundColor: '#FFF', borderRadius: 8, padding: 10, elevation: 3 }}>
-        <View style={{ flexDirection: 'row', borderBottomWidth: 2, borderBottomColor: '#EEE', paddingBottom: 10, marginBottom: 10 }}>
-          <Text style={{ flex: 1, fontWeight: 'bold', fontSize: 16 }}>Type</Text>
-          <Text style={{ flex: 1, fontWeight: 'bold', fontSize: 16, textAlign: 'right' }}>Com</Text>
-          <Text style={{ flex: 1, fontWeight: 'bold', fontSize: 16, textAlign: 'right' }}>Payout</Text>
+    return (
+      <View style={{ flex: 1, padding: 20 }}>
+        {/* Header */}
+        <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 20 }}>
+          <TouchableOpacity onPress={() => setCurrentView('users')}>
+            <Ionicons name="arrow-back" size={24} color="#333" />
+          </TouchableOpacity>
+          <Text style={{ fontSize: 24, fontWeight: 'bold', marginLeft: 10, color: '#333' }}>Rate Master</Text>
         </View>
 
-        {[
-          { label: 'Single', key: 'single', payout: '95' },
-          { label: 'Double', key: 'double', payout: '950' },
-          { label: 'Triple', key: 'triple', payout: '5000' },
-          { label: 'Quad', key: 'quad', payout: '9000' },
-        ].map((item, index) => {
-          const rate = rates[item.key] || 0.0;
-          return (
-            <View key={index} style={{ flexDirection: 'row', paddingVertical: 12, borderBottomWidth: 1, borderBottomColor: '#F5F5F5' }}>
-              <Text style={{ flex: 1, fontSize: 16, color: '#555' }}>{item.label}</Text>
-              <Text style={{ flex: 1, fontSize: 16, fontWeight: 'bold', textAlign: 'right', color: COLORS.primary }}>{rate}</Text>
-              <Text style={{ flex: 1, fontSize: 16, textAlign: 'right', color: '#333' }}>{item.payout}</Text>
-            </View>
-          );
-        })}
+        {/* Dropdowns */}
+        <View style={{ marginBottom: 20, zIndex: 2000 }}>
+          {/* Game Dropdown (Visual only for now as rates are global) */}
+          <View style={{ marginBottom: 15 }}>
+            <TouchableOpacity
+              style={{ borderBottomWidth: 2, borderBottomColor: COLORS.primary, paddingVertical: 10, flexDirection: 'row', justifyContent: 'space-between' }}
+            >
+              <Text style={{ fontSize: 16, color: '#333' }}>{games.length > 0 ? '1:00PM' : 'Loading...'}</Text>
+              <Ionicons name="caret-down" size={16} color="#666" />
+            </TouchableOpacity>
+          </View>
+
+          {/* User Selection Dropdown */}
+          <View>
+            <TouchableOpacity
+              style={{ borderBottomWidth: 1, borderBottomColor: '#CCC', paddingVertical: 10, flexDirection: 'row', justifyContent: 'space-between' }}
+              onPress={() => setIsAgentDropdownOpen(!isAgentDropdownOpen)}
+            >
+              <Text style={{ fontSize: 16, color: '#333' }}>
+                {selectedSubUser ? selectedSubUser.username : 'Select Customer'}
+              </Text>
+              <Ionicons name="caret-down" size={16} color="#666" />
+            </TouchableOpacity>
+
+            {isAgentDropdownOpen && (
+              <View style={{
+                position: 'absolute', top: '100%', left: 0, right: 0,
+                backgroundColor: '#FFF', borderWidth: 1, borderColor: '#CCC',
+                elevation: 5, maxHeight: 200
+              }}>
+                <FlatList
+                  data={subUsers}
+                  keyExtractor={item => item.id.toString()}
+                  renderItem={({ item }) => (
+                    <TouchableOpacity
+                      style={{ padding: 15, borderBottomWidth: 1, borderBottomColor: '#EEE' }}
+                      onPress={async () => {
+                        setSelectedSubUser(item);
+                        setIsAgentDropdownOpen(false);
+                        // Fetch Sub User Rates to populate "Assign Rate"
+                        const { data: subRates } = await ticketService.getUserRates(item.id);
+                        if (subRates) setAssignedRates(subRates); // Pre-fill with existing
+                        else setAssignedRates({});
+                      }}
+                    >
+                      <Text>{item.username}</Text>
+                    </TouchableOpacity>
+                  )}
+                />
+              </View>
+            )}
+          </View>
+        </View>
+
+        {/* Table Title */}
+        <Text style={{ fontWeight: 'bold', fontSize: 16, marginBottom: 10, color: '#333' }}>Ticket Price details</Text>
+
+        {/* Table */}
+        <View style={{ backgroundColor: '#FFF', elevation: 1 }}>
+          <View style={{ flexDirection: 'row', backgroundColor: '#9E9E9E', padding: 10 }}>
+            <Text style={{ flex: 1.5, color: '#FFF', fontWeight: 'bold' }}>Ticket</Text>
+            <Text style={{ flex: 1, color: '#FFF', fontWeight: 'bold' }}>Rate</Text>
+            <Text style={{ flex: 1, color: '#FFF', fontWeight: 'bold' }}>Assign Rate</Text>
+          </View>
+
+          {rateTypes.map((item, index) => {
+            const myRate = rates[item.key] || 0.0;
+            const assignedVal = assignedRates[item.key] !== undefined ? assignedRates[item.key].toString() : '';
+
+            return (
+              <View key={index} style={{ flexDirection: 'row', borderBottomWidth: 1, borderBottomColor: '#EEE', paddingVertical: 10, paddingHorizontal: 5, alignItems: 'center' }}>
+                <Text style={{ flex: 1.5, fontSize: 16, fontWeight: 'bold', color: '#000' }}>{item.label}</Text>
+
+                {/* My Rate (Read Only) */}
+                <Text style={{ flex: 1, fontSize: 16, color: '#333' }}>{myRate}</Text>
+
+                {/* Assign Rate (Input) */}
+                <TextInput
+                  style={{
+                    flex: 1, borderWidth: 1, borderColor: '#CCC',
+                    padding: 5, color: '#000', fontSize: 16, borderRadius: 4,
+                    backgroundColor: '#F9F9F9'
+                  }}
+                  keyboardType="numeric"
+                  value={assignedVal}
+                  placeholder={myRate.toString()} // Hint at current rate
+                  onChangeText={(text) => {
+                    setAssignedRates(prev => ({ ...prev, [item.key]: text }));
+                  }}
+                />
+              </View>
+            );
+          })}
+        </View>
+
+        {/* Checkbox */}
+        <View style={{ flexDirection: 'row', alignItems: 'center', marginTop: 20 }}>
+          <Checkbox
+            label="Apply All Games"
+            checked={true} // For now always true as we only have global rates
+            onPress={() => { }}
+          />
+        </View>
+
+        {/* Save Button */}
+        <TouchableOpacity
+          style={{
+            backgroundColor: '#2962FF', padding: 15, alignItems: 'center',
+            justifyContent: 'center', marginTop: 'auto', marginBottom: 20
+          }}
+          onPress={handleSaveRates}
+        >
+          <Text style={{ color: '#FFF', fontWeight: 'bold', fontSize: 18 }}>Save</Text>
+        </TouchableOpacity>
+
       </View>
-    </View>
-  );
+    );
+  };
 
   const renderPrizes = () => {
     const prizeData = [
