@@ -685,6 +685,19 @@ export default function App() {
           {/* TAB 1: PROFILE */}
           {activeUserTab === 'profile' && (
             <View>
+              {editingUser.id === 'new' && (
+                <View style={{ marginBottom: 15, backgroundColor: '#E3F2FD', padding: 10, borderRadius: 5 }}>
+                  <Text style={{ color: '#0D47A1', fontWeight: 'bold' }}>
+                    Creating Role: {
+                      agent.role === 'admin' ? 'Main Agent' :
+                        agent.role === 'main_agent' ? 'Sub Agent' :
+                          agent.role === 'sub_agent' ? 'Stockist' :
+                            agent.role === 'stockist' ? 'Sub Stockist' :
+                              'User/Terminal'
+                    }
+                  </Text>
+                </View>
+              )}
               <Text style={styles.inputLabel}>Username</Text>
               <TextInput
                 style={styles.inputField}

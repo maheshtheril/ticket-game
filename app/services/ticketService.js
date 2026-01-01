@@ -37,7 +37,8 @@ export const ticketService = {
             'admin': 'main_agent',
             'main_agent': 'sub_agent',
             'sub_agent': 'stockist',
-            'stockist': 'user'
+            'stockist': 'sub_stockist',
+            'sub_stockist': 'user'
         };
 
         const newRole = roleMap[currentUser.role];
