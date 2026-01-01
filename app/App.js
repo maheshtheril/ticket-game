@@ -1472,6 +1472,13 @@ const renderSideMenu = () => (
       <Text style={styles.menuText}>Prize And Commission</Text>
     </TouchableOpacity>
 
+    {agent && agent.role === 'admin' && (
+      <TouchableOpacity style={styles.menuItem} onPress={() => navigateTo('adminPanel')}>
+        <Ionicons name="settings-outline" size={24} color="#333" />
+        <Text style={styles.menuText}>Admin Panel</Text>
+      </TouchableOpacity>
+    )}
+
     <TouchableOpacity style={styles.menuItem} onPress={() => navigateTo('reports')}>
       <Ionicons name="document-text-outline" size={24} color="#333" />
       <Text style={styles.menuText}>Reports</Text>
@@ -1530,6 +1537,7 @@ return (
     {currentView === 'dashboard' && renderDashboard()}
     {currentView === 'rates' && renderRates()}
     {currentView === 'prizes' && renderPrizes()}
+    {currentView === 'adminPanel' && renderAdminPanel()}
 
 
     {currentView === 'game' && (
