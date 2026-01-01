@@ -74,8 +74,9 @@ export default function App() {
 
   // Edit User State
   const [editingUser, setEditingUser] = useState(null);
-  const [editLimits, setEditLimits] = useState({ daily: '', single: '' });
+  const [editLimits, setEditLimits] = useState({ daily: '', weekly: '', single: '' }); // Added weekly
   const [editIsActive, setEditIsActive] = useState(true);
+  const [editBlockedNumbers, setEditBlockedNumbers] = useState(''); // Comma separated
 
   // Load Games (Real)
 
@@ -573,6 +574,111 @@ export default function App() {
     </View>
   );
 
+  const renderUserDetail = () => {
+    if (!editingUser) return null;
+
+    const handleSaveUser = async () => {
+      // Save Limits
+      if (editLimits.daily || editLimits.single || editLimits.weekly || editBlockedNumbers) {
+        const limits = {};
+        if (editLimits.daily) limits.daily_sales_limit = parseFloat(editLimits.daily);
+        if (editLimits.weekly) limits.weekly_sales_limit = parseFloat(editLimits.weekly);
+        if (editLimits.single) limits.max_single_number_count = parseInt(editLimits.single);
+        if (editBlockedNumbers) limits.blocked_numbers = editBlockedNumbers; // Send as string
+
+        const { error } = await ticketService.updateUserLimits(editingUser.id, limits);
+        if (error) { alert('Error saving limits: ' + error); return; }
+      }
+
+      // Save Status
+      if (editIsActive !== editingUser.is_active) {
+        const { error } = await ticketService.toggleUserStatus(editingUser.id, editIsActive);
+        if (error) { alert('Error updating status: ' + error); return; }
+      }
+
+      alert('User updated successfully!');
+      setEditingUser(null);
+      loadSubUsers(); // Refresh list
+    };
+
+    return (
+      <View style={{ flex: 1, padding: 20 }}>
+        <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 20 }}>
+          <TouchableOpacity onPress={() => setEditingUser(null)}>
+            <Ionicons name="arrow-back" size={24} color="#333" />
+          </TouchableOpacity>
+          <Text style={{ fontSize: 24, fontWeight: 'bold', marginLeft: 10, color: '#333' }}>Edit Customer</Text>
+        </View>
+
+        <View style={{ backgroundColor: '#FFF', padding: 15, borderRadius: 8, elevation: 2 }}>
+          <Text style={{ fontSize: 18, fontWeight: 'bold', marginBottom: 15 }}>{editingUser.username}</Text>
+
+          {/* Status Toggle */}
+          <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 }}>
+            <Text style={{ fontSize: 16 }}>Block User</Text>
+            <Switch
+              value={!editIsActive}
+              onValueChange={(val) => setEditIsActive(!val)}
+              trackColor={{ false: "#767577", true: "red" }}
+            />
+          </View>
+
+          <Text style={{ fontSize: 16, fontWeight: 'bold', marginBottom: 10 }}>Sales Limits</Text>
+
+          <View style={styles.inputWrapper}>
+            <Text style={styles.inputText}>Daily Sales Limit</Text>
+            <TextInput
+              style={{ minWidth: 100, textAlign: 'right', fontSize: 16 }}
+              placeholder="No Limit"
+              value={editLimits.daily}
+              onChangeText={t => setEditLimits({ ...editLimits, daily: t })}
+              keyboardType="numeric"
+            />
+          </View>
+
+          <View style={styles.inputWrapper}>
+            <Text style={styles.inputText}>Weekly Sales Limit</Text>
+            <TextInput
+              style={{ minWidth: 100, textAlign: 'right', fontSize: 16 }}
+              placeholder="No Limit"
+              value={editLimits.weekly}
+              onChangeText={t => setEditLimits({ ...editLimits, weekly: t })}
+              keyboardType="numeric"
+            />
+          </View>
+
+          <View style={styles.inputWrapper}>
+            <Text style={styles.inputText}>Max Per Number</Text>
+            <TextInput
+              style={{ minWidth: 100, textAlign: 'right', fontSize: 16 }}
+              placeholder="No Limit"
+              value={editLimits.single}
+              onChangeText={t => setEditLimits({ ...editLimits, single: t })}
+              keyboardType="numeric"
+            />
+          </View>
+
+          <Text style={{ fontSize: 16, fontWeight: 'bold', marginBottom: 10, marginTop: 10 }}>Block Numbers</Text>
+          <View style={styles.inputWrapper}>
+            <TextInput
+              style={{ flex: 1, fontSize: 16 }}
+              placeholder="Ex: 123, 44, 9"
+              value={editBlockedNumbers}
+              onChangeText={setEditBlockedNumbers}
+            />
+          </View>
+
+          <TouchableOpacity
+            style={{ backgroundColor: COLORS.primary, padding: 15, borderRadius: 5, alignItems: 'center', marginTop: 20 }}
+            onPress={handleSaveUser}
+          >
+            <Text style={{ color: '#FFF', fontWeight: 'bold', fontSize: 16 }}>Save Changes</Text>
+          </TouchableOpacity>
+        </View>
+      </View>
+    );
+  };
+
   const renderUsers = () => {
     if (editingUser) return renderUserDetail();
 
@@ -640,7 +746,9 @@ export default function App() {
                 <TouchableOpacity onPress={() => {
                   setEditingUser(user);
                   setEditIsActive(user.is_active);
-                  setEditLimits({ daily: '', single: '' });
+                  setEditLimits({ daily: '', weekly: '', single: '' });
+                  setEditBlockedNumbers('');
+                  // Ideally fetch limits here. Assuming for now we rely on user inputting new values or we fetch in useEffect when editingUser changes.
                 }}>
                   <Ionicons name="create-outline" size={24} color="#555" />
                 </TouchableOpacity>
