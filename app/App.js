@@ -769,6 +769,42 @@ export default function App() {
     );
   };
 
+  const renderRates = () => (
+    <View style={{ flex: 1, padding: 20 }}>
+      {/* Header */}
+      <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 20 }}>
+        <TouchableOpacity onPress={() => setCurrentView('users')}>
+          <Ionicons name="arrow-back" size={24} color="#333" />
+        </TouchableOpacity>
+        <Text style={{ fontSize: 24, fontWeight: 'bold', marginLeft: 10, color: '#333' }}>Rate Master</Text>
+      </View>
+
+      <View style={{ backgroundColor: '#FFF', borderRadius: 8, padding: 10, elevation: 3 }}>
+        <View style={{ flexDirection: 'row', borderBottomWidth: 2, borderBottomColor: '#EEE', paddingBottom: 10, marginBottom: 10 }}>
+          <Text style={{ flex: 1, fontWeight: 'bold', fontSize: 16 }}>Type</Text>
+          <Text style={{ flex: 1, fontWeight: 'bold', fontSize: 16, textAlign: 'right' }}>Com</Text>
+          <Text style={{ flex: 1, fontWeight: 'bold', fontSize: 16, textAlign: 'right' }}>Payout</Text>
+        </View>
+
+        {[
+          { label: 'Single', key: 'single', payout: '95' },
+          { label: 'Double', key: 'double', payout: '950' },
+          { label: 'Triple', key: 'triple', payout: '5000' },
+          { label: 'Quad', key: 'quad', payout: '9000' },
+        ].map((item, index) => {
+          const rate = rates[item.key] || 0.0;
+          return (
+            <View key={index} style={{ flexDirection: 'row', paddingVertical: 12, borderBottomWidth: 1, borderBottomColor: '#F5F5F5' }}>
+              <Text style={{ flex: 1, fontSize: 16, color: '#555' }}>{item.label}</Text>
+              <Text style={{ flex: 1, fontSize: 16, fontWeight: 'bold', textAlign: 'right', color: COLORS.primary }}>{rate}</Text>
+              <Text style={{ flex: 1, fontSize: 16, textAlign: 'right', color: '#333' }}>{item.payout}</Text>
+            </View>
+          );
+        })}
+      </View>
+    </View>
+  );
+
   const renderPrizes = () => {
     const prizeData = [
       { name: 'First', rate: '5000', super: '400' },
