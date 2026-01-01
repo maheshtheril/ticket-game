@@ -603,18 +603,22 @@ export default function App() {
       // 1. Basic Info (If New)
       if (editingUser.id === 'new') {
         if (!userForm.username || !userForm.password) { alert('Username & Password required'); return; }
-        const { data, error } = await ticketService.createUser(agent, userForm.username, userForm.password, userForm.balance || 0);
+        // For Admin -> Main Agent, balance might be ignored/0
+        const initialBal = (agent.role === 'admin') ? 0 : (parseFloat(userForm.balance) || 0);
+
+        const { data, error } = await ticketService.createUser(agent, userForm.username, userForm.password, initialBal);
         if (error) { alert(error); return; }
-        // Continue to update limits/rates for this new user
         editingUser.id = data.id;
       }
 
-      // 2. Limits
+      // 2. Limits (Including Special Numbers)
       const limits = {
         daily_sales_limit: parseFloat(userForm.dailyLimit) || null,
         weekly_sales_limit: parseFloat(userForm.weeklyLimit) || null,
         max_single_number_count: parseInt(userForm.singleLimit) || null,
-        blocked_numbers: userForm.blockedNumbers,
+        // Blocked numbers removed for this flow as requested, or keep optional
+        // special_number_limits logic
+        special_number_limits: userForm.specialLimits || {}, // { "123": 50, "5": 200 }
         type_limits: {
           double: parseInt(userForm.doubleLimit) || null,
           super: parseInt(userForm.superLimit) || null,
@@ -623,12 +627,16 @@ export default function App() {
       };
       await ticketService.updateUserLimits(editingUser.id, limits);
 
-      // 3. Rates
+      // 3. Rates & Prizes
       const rateUpdates = {};
-      // Convert form rates { single: { assign: '10' } } to service format { single: 10 }
       Object.keys(userForm.rates).forEach(k => {
-        if (userForm.rates[k]?.assign) rateUpdates[k] = userForm.rates[k].assign;
+        rateUpdates[k] = {
+          buy_rate: userForm.rates[k]?.assign,
+          commission: userForm.rates[k]?.comm,
+          payout: userForm.rates[k]?.payout
+        };
       });
+
       if (Object.keys(rateUpdates).length > 0) {
         const { error: rateErr } = await ticketService.updateUserRates(editingUser.id, rateUpdates);
         if (rateErr) { alert('Error updating rates: ' + rateErr); return; }
@@ -665,11 +673,11 @@ export default function App() {
 
         {/* Tabs */}
         <View style={{ flexDirection: 'row', marginBottom: 20 }}>
-          {['profile', 'limits', 'rates'].map(tab => (
+          {['profile', 'limits', 'rates', 'prizes'].map(tab => (
             <TouchableOpacity
               key={tab}
               style={{
-                paddingVertical: 10, paddingHorizontal: 20,
+                paddingVertical: 10, paddingHorizontal: 15,
                 borderBottomWidth: activeUserTab === tab ? 3 : 0,
                 borderBottomColor: COLORS.primary
               }}
@@ -717,13 +725,18 @@ export default function App() {
 
               {editingUser.id === 'new' && (
                 <>
-                  <Text style={styles.inputLabel}>Initial Balance</Text>
-                  <TextInput
-                    style={styles.inputField}
-                    value={userForm.balance}
-                    onChangeText={t => updateForm('balance', t)}
-                    keyboardType="numeric"
-                  />
+                  {/* Hide Balance for Admin -> Main Agent */}
+                  {agent.role !== 'admin' && (
+                    <>
+                      <Text style={styles.inputLabel}>Initial Balance</Text>
+                      <TextInput
+                        style={styles.inputField}
+                        value={userForm.balance}
+                        onChangeText={t => updateForm('balance', t)}
+                        keyboardType="numeric"
+                      />
+                    </>
+                  )}
                 </>
               )}
 
@@ -772,38 +785,39 @@ export default function App() {
                 </View>
               </View>
 
-              <Text style={{ fontWeight: 'bold', marginTop: 15, marginBottom: 5 }}>Blocked Numbers</Text>
+              <Text style={{ fontWeight: 'bold', marginTop: 15, marginBottom: 5 }}>Particular Number Limits (Special)</Text>
+              <Text style={{ fontSize: 12, color: '#666', marginBottom: 10 }}>Format: Number=Limit (e.g. 7=50, 88=100). Comma separated.</Text>
               <TextInput
                 style={[styles.inputField, { height: 60 }]}
                 multiline
-                placeholder="123, 45, 99..."
-                value={userForm.blockedNumbers}
-                onChangeText={t => updateForm('blockedNumbers', t)}
+                placeholder="e.g. 5=100, 22=50"
+                value={userForm.specialLimitsInput || ''}
+                onChangeText={t => updateForm('specialLimitsInput', t)}
               />
             </ScrollView>
           )}
 
           {/* TAB 3: RATES */}
           {activeUserTab === 'rates' && (
-            <View>
+            <ScrollView>
               <View style={{ flexDirection: 'row', backgroundColor: '#EEE', padding: 8, marginBottom: 5 }}>
-                <Text style={{ flex: 1, fontWeight: 'bold' }}>Type</Text>
-                <Text style={{ flex: 1, fontWeight: 'bold' }}>My Rate</Text>
-                <Text style={{ flex: 1, fontWeight: 'bold' }}>Assign</Text>
-                <Text style={{ flex: 1, fontWeight: 'bold' }}>Margin</Text>
+                <Text style={{ flex: 1.2, fontWeight: 'bold' }}>Type</Text>
+                <Text style={{ flex: 1, fontWeight: 'bold', fontSize: 12 }}>My Rate</Text>
+                <Text style={{ flex: 1.2, fontWeight: 'bold', fontSize: 12 }}>Assign Rate</Text>
+                <Text style={{ flex: 1, fontWeight: 'bold', fontSize: 12 }}>Margin</Text>
               </View>
               {rateTypes.map((item) => {
-                const myRate = rates[item.key] || 0;
-                const assignData = userForm.rates[item.key] || { assign: myRate.toString() }; // Default to My Rate
+                const myRate = parseFloat(rates[item.key] || (agent.role === 'admin' ? 10 : 0)); // Default 10 for admin
+                const assignData = userForm.rates[item.key] || { assign: myRate.toString() };
                 const assignVal = parseFloat(assignData.assign) || 0;
                 const margin = (myRate - assignVal).toFixed(2);
 
                 return (
-                  <View key={item.key} style={{ flexDirection: 'row', paddingVertical: 10, alignItems: 'center', borderBottomWidth: 1, borderBottomColor: '#f0f0f0' }}>
-                    <Text style={{ flex: 1 }}>{item.label}</Text>
-                    <Text style={{ flex: 1, color: '#666' }}>{myRate}</Text>
+                  <View key={item.key} style={{ flexDirection: 'row', paddingVertical: 12, alignItems: 'center', borderBottomWidth: 1, borderBottomColor: '#f0f0f0' }}>
+                    <Text style={{ flex: 1.2, fontSize: 14 }}>{item.label}</Text>
+                    <Text style={{ flex: 1, color: '#555' }}>{myRate}</Text>
                     <TextInput
-                      style={{ flex: 1, borderWidth: 1, borderColor: '#CCC', padding: 2, marginRight: 5, textAlign: 'center' }}
+                      style={{ flex: 1.2, borderWidth: 1, borderColor: '#CCC', padding: 4, marginRight: 5, textAlign: 'center', backgroundColor: '#FAFAFA' }}
                       value={assignData.assign}
                       onChangeText={t => updateRate(item.key, 'assign', t)}
                       keyboardType="numeric"
@@ -812,7 +826,44 @@ export default function App() {
                   </View>
                 );
               })}
-            </View>
+            </ScrollView>
+          )}
+
+          {/* TAB 4: PRIZES & COMM */}
+          {activeUserTab === 'prizes' && (
+            <ScrollView>
+              <View style={{ flexDirection: 'row', backgroundColor: '#EEE', padding: 8, marginBottom: 5 }}>
+                <Text style={{ flex: 1.5, fontWeight: 'bold' }}>Type</Text>
+                <Text style={{ flex: 1, fontWeight: 'bold', fontSize: 12 }}>My Prize</Text>
+                <Text style={{ flex: 1.2, fontWeight: 'bold', fontSize: 12 }}>Assign Prize</Text>
+                <Text style={{ flex: 1, fontWeight: 'bold', fontSize: 12 }}>Comm %</Text>
+              </View>
+              {rateTypes.map((item) => {
+                // Mock Parent Prizes (In real app, fetch from parent limits/rates)
+                const myPrize = item.key === 'single' ? 95 : item.key === 'double' ? 950 : 5000;
+
+                const storedRate = userForm.rates[item.key] || {};
+
+                return (
+                  <View key={item.key} style={{ flexDirection: 'row', paddingVertical: 12, alignItems: 'center', borderBottomWidth: 1, borderBottomColor: '#f0f0f0' }}>
+                    <Text style={{ flex: 1.5, fontSize: 14 }}>{item.label}</Text>
+                    <Text style={{ flex: 1, color: '#555' }}>{myPrize}</Text>
+                    <TextInput
+                      style={{ flex: 1.2, borderWidth: 1, borderColor: '#CCC', padding: 4, marginRight: 5, textAlign: 'center', backgroundColor: '#FAFAFA' }}
+                      value={storedRate.payout || myPrize.toString()}
+                      onChangeText={t => updateRate(item.key, 'payout', t)}
+                      keyboardType="numeric"
+                    />
+                    <TextInput
+                      style={{ flex: 1, borderWidth: 1, borderColor: '#CCC', padding: 4, textAlign: 'center', backgroundColor: '#FAFAFA' }}
+                      value={storedRate.comm || '0'}
+                      onChangeText={t => updateRate(item.key, 'comm', t)}
+                      keyboardType="numeric"
+                    />
+                  </View>
+                );
+              })}
+            </ScrollView>
           )}
         </View>
 
