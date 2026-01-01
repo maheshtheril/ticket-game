@@ -775,8 +775,8 @@ export default function App() {
     const rateTypes = [
       { label: 'Single(1)', key: 'single' },
       { label: 'Double(2)', key: 'double' },
-      { label: 'Triple', key: 'triple' },
-      { label: 'Quad', key: 'quad' },
+      { label: 'Lsk Super', key: 'super' },
+      { label: 'Box', key: 'box' },
     ];
 
     return (
@@ -791,14 +791,50 @@ export default function App() {
 
         {/* Dropdowns */}
         <View style={{ marginBottom: 20, zIndex: 2000 }}>
-          {/* Game Dropdown (Visual only for now as rates are global) */}
+          {/* Game Dropdown */}
           <View style={{ marginBottom: 15 }}>
             <TouchableOpacity
               style={{ borderBottomWidth: 2, borderBottomColor: COLORS.primary, paddingVertical: 10, flexDirection: 'row', justifyContent: 'space-between' }}
+              onPress={() => setIsGameDropdownOpen(!isGameDropdownOpen)}
             >
-              <Text style={{ fontSize: 16, color: '#333' }}>{games.length > 0 ? '1:00PM' : 'Loading...'}</Text>
-              <Ionicons name="caret-down" size={16} color="#666" />
+              <Text style={{ fontSize: 16, color: '#333' }}>
+                {selectedGame ? (selectedGame.displayName || selectedGame.name) : 'Select Draw'}
+              </Text>
+              <Ionicons name={isGameDropdownOpen ? "caret-up" : "caret-down"} size={16} color="#666" />
             </TouchableOpacity>
+
+            {isGameDropdownOpen && (
+              <View style={{
+                position: 'absolute', top: '100%', left: 0, right: 0,
+                backgroundColor: '#FFF', borderWidth: 1, borderColor: '#CCC',
+                elevation: 5, maxHeight: 200
+              }}>
+                <FlatList
+                  data={games}
+                  keyExtractor={item => item.id.toString()}
+                  renderItem={({ item }) => (
+                    <TouchableOpacity
+                      style={{ padding: 15, borderBottomWidth: 1, borderBottomColor: '#EEE' }}
+                      onPress={() => {
+                        // Logic to get display name if missing
+                        const timeStr = new Date(item.draw_time).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: true });
+                        let displayName = item.name;
+                        if (timeStr.includes('1:00') || timeStr.includes('01:00')) displayName = 'D-1:00PM';
+                        else if (timeStr.includes('3:00') || timeStr.includes('03:00')) displayName = 'K-3:00PM';
+                        else if (timeStr.includes('6:00') || timeStr.includes('06:00')) displayName = 'D-6:00PM';
+                        else if (timeStr.includes('8:00') || timeStr.includes('08:00')) displayName = 'D-8:00PM';
+
+                        item.displayName = displayName;
+                        setSelectedGame(item);
+                        setIsGameDropdownOpen(false);
+                      }}
+                    >
+                      <Text>{item.displayName || item.name || new Date(item.draw_time).toLocaleTimeString()}</Text>
+                    </TouchableOpacity>
+                  )}
+                />
+              </View>
+            )}
           </View>
 
           {/* User Selection Dropdown */}
