@@ -10,12 +10,17 @@ export const ticketService = {
                 .eq('username', username)
                 .single();
 
+            console.log("Login Attempt:", username, password);
+            if (error) console.log("Login Error:", error);
+            if (user) console.log("User Found:", user.username, user.password_hash);
+
             if (error || !user) {
                 return { error: 'User not found' };
             }
 
             // Simple password check for simulation (In real app, use bcrypt on server)
             if (user.password_hash !== password) {
+                console.log("Password Mismatch. Input:", password, "Stored:", user.password_hash);
                 return { error: 'Invalid password' };
             }
 
