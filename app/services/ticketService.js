@@ -282,6 +282,10 @@ export const ticketService = {
         return { allowed: true };
     },
 
+    async getUserLimits(userId) {
+        return await supabase.from('user_limits').select('*').eq('user_id', userId).single();
+    },
+
     // 4.1 Update User Limits
     async updateUserLimits(userId, limits) {
         // Validation: Check Parent

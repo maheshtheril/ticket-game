@@ -68,8 +68,10 @@ CREATE TABLE user_limits (
     daily_sales_limit DECIMAL(15, 2),
     weekly_sales_limit DECIMAL(15, 2),
     max_single_number_count INT,
-    blocked_numbers TEXT,
-    special_number_limits JSONB
+    blocked_numbers TEXT, -- Comma separated list of blocked numbers
+    special_number_limits JSONB DEFAULT '{}'::jsonb, -- {"786": 10}
+    type_limits JSONB DEFAULT '{}'::jsonb, -- {"single": 100, "double": 50, "box": 50}
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()) NOT NULL
 );
 
 -- 10. SCHEMES

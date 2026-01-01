@@ -10,7 +10,8 @@ import {
   StatusBar,
   TextInput,
   Animated,
-  Switch
+  Switch,
+  ScrollView
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 
@@ -74,7 +75,16 @@ export default function App() {
 
   // Edit User State
   const [editingUser, setEditingUser] = useState(null);
-  const [editLimits, setEditLimits] = useState({ daily: '', weekly: '', single: '' }); // Added weekly
+  const [activeUserTab, setActiveUserTab] = useState('profile'); // profile, limits, rates
+  const [userForm, setUserForm] = useState({
+    username: '', password: '', balance: '',
+    dailyLimit: '', weeklyLimit: '',
+    singleLimit: '', doubleLimit: '', superLimit: '', boxLimit: '',
+    blockedNumbers: '',
+    rates: {}, // { single: { assign: '10', margin: '0.5' } }
+    isActive: true
+  });
+  const [editLimits, setEditLimits] = useState({ daily: '', weekly: '', single: '' }); // Deprecated but might need cleanup
   const [editIsActive, setEditIsActive] = useState(true);
   const [editBlockedNumbers, setEditBlockedNumbers] = useState(''); // Comma separated
 
@@ -576,106 +586,225 @@ export default function App() {
   );
 
   const renderUserDetail = () => {
-    if (!editingUser) return null;
-
-    const handleSaveUser = async () => {
-      // Save Limits
-      if (editLimits.daily || editLimits.single || editLimits.weekly || editBlockedNumbers) {
-        const limits = {};
-        if (editLimits.daily) limits.daily_sales_limit = parseFloat(editLimits.daily);
-        if (editLimits.weekly) limits.weekly_sales_limit = parseFloat(editLimits.weekly);
-        if (editLimits.single) limits.max_single_number_count = parseInt(editLimits.single);
-        if (editBlockedNumbers) limits.blocked_numbers = editBlockedNumbers; // Send as string
-
-        const { error } = await ticketService.updateUserLimits(editingUser.id, limits);
-        if (error) { alert('Error saving limits: ' + error); return; }
-      }
-
-      // Save Status
-      if (editIsActive !== editingUser.is_active) {
-        const { error } = await ticketService.toggleUserStatus(editingUser.id, editIsActive);
-        if (error) { alert('Error updating status: ' + error); return; }
-      }
-
-      alert('User updated successfully!');
-      setEditingUser(null);
-      loadSubUsers(); // Refresh list
+    // Helper to update nested form state
+    const updateForm = (key, value) => setUserForm(prev => ({ ...prev, [key]: value }));
+    const updateRate = (type, field, value) => {
+      setUserForm(prev => ({
+        ...prev,
+        rates: {
+          ...prev.rates,
+          [type]: { ...prev.rates[type], [field]: value }
+        }
+      }));
     };
 
+    const handleSave = async () => {
+      // Construct Payload
+      // 1. Basic Info (If New)
+      if (editingUser.id === 'new') {
+        if (!userForm.username || !userForm.password) { alert('Username & Password required'); return; }
+        const { data, error } = await ticketService.createUser(agent, userForm.username, userForm.password, userForm.balance || 0);
+        if (error) { alert(error); return; }
+        // Continue to update limits/rates for this new user
+        editingUser.id = data.id;
+      }
+
+      // 2. Limits
+      const limits = {
+        daily_sales_limit: parseFloat(userForm.dailyLimit) || null,
+        weekly_sales_limit: parseFloat(userForm.weeklyLimit) || null,
+        max_single_number_count: parseInt(userForm.singleLimit) || null,
+        blocked_numbers: userForm.blockedNumbers,
+        type_limits: {
+          double: parseInt(userForm.doubleLimit) || null,
+          super: parseInt(userForm.superLimit) || null,
+          box: parseInt(userForm.boxLimit) || null
+        }
+      };
+      await ticketService.updateUserLimits(editingUser.id, limits);
+
+      // 3. Rates
+      const rateUpdates = {};
+      // Convert form rates { single: { assign: '10' } } to service format { single: 10 }
+      Object.keys(userForm.rates).forEach(k => {
+        if (userForm.rates[k]?.assign) rateUpdates[k] = userForm.rates[k].assign;
+      });
+      if (Object.keys(rateUpdates).length > 0) {
+        await ticketService.updateUserRates(editingUser.id, rateUpdates);
+      }
+
+      // 4. Status
+      if (editingUser.id !== 'new') {
+        await ticketService.toggleUserStatus(editingUser.id, userForm.isActive);
+      }
+
+      alert('Saved Successfully!');
+      setEditingUser(null);
+      loadSubUsers();
+    };
+
+    const rateTypes = [
+      { label: 'Single', key: 'single' },
+      { label: 'Double', key: 'double' },
+      { label: 'Lsk Super', key: 'super' },
+      { label: 'Box', key: 'box' },
+    ];
+
     return (
-      <View style={{ flex: 1, padding: 20 }}>
-        <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 20 }}>
+      <View style={{ flex: 1, padding: 15 }}>
+        {/* Header */}
+        <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 15 }}>
           <TouchableOpacity onPress={() => setEditingUser(null)}>
             <Ionicons name="arrow-back" size={24} color="#333" />
           </TouchableOpacity>
-          <Text style={{ fontSize: 24, fontWeight: 'bold', marginLeft: 10, color: '#333' }}>Edit Customer</Text>
+          <Text style={{ fontSize: 24, fontWeight: 'bold', marginLeft: 10 }}>
+            {editingUser.id === 'new' ? 'Create User' : 'Edit User'}
+          </Text>
         </View>
 
-        <View style={{ backgroundColor: '#FFF', padding: 15, borderRadius: 8, elevation: 2 }}>
-          <Text style={{ fontSize: 18, fontWeight: 'bold', marginBottom: 15 }}>{editingUser.username}</Text>
-
-          {/* Status Toggle */}
-          <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 }}>
-            <Text style={{ fontSize: 16 }}>Block User</Text>
-            <Switch
-              value={!editIsActive}
-              onValueChange={(val) => setEditIsActive(!val)}
-              trackColor={{ false: "#767577", true: "red" }}
-            />
-          </View>
-
-          <Text style={{ fontSize: 16, fontWeight: 'bold', marginBottom: 10 }}>Sales Limits</Text>
-
-          <View style={styles.inputWrapper}>
-            <Text style={styles.inputText}>Daily Sales Limit</Text>
-            <TextInput
-              style={{ minWidth: 100, textAlign: 'right', fontSize: 16 }}
-              placeholder="No Limit"
-              value={editLimits.daily}
-              onChangeText={t => setEditLimits({ ...editLimits, daily: t })}
-              keyboardType="numeric"
-            />
-          </View>
-
-          <View style={styles.inputWrapper}>
-            <Text style={styles.inputText}>Weekly Sales Limit</Text>
-            <TextInput
-              style={{ minWidth: 100, textAlign: 'right', fontSize: 16 }}
-              placeholder="No Limit"
-              value={editLimits.weekly}
-              onChangeText={t => setEditLimits({ ...editLimits, weekly: t })}
-              keyboardType="numeric"
-            />
-          </View>
-
-          <View style={styles.inputWrapper}>
-            <Text style={styles.inputText}>Max Per Number</Text>
-            <TextInput
-              style={{ minWidth: 100, textAlign: 'right', fontSize: 16 }}
-              placeholder="No Limit"
-              value={editLimits.single}
-              onChangeText={t => setEditLimits({ ...editLimits, single: t })}
-              keyboardType="numeric"
-            />
-          </View>
-
-          <Text style={{ fontSize: 16, fontWeight: 'bold', marginBottom: 10, marginTop: 10 }}>Block Numbers</Text>
-          <View style={styles.inputWrapper}>
-            <TextInput
-              style={{ flex: 1, fontSize: 16 }}
-              placeholder="Ex: 123, 44, 9"
-              value={editBlockedNumbers}
-              onChangeText={setEditBlockedNumbers}
-            />
-          </View>
-
-          <TouchableOpacity
-            style={{ backgroundColor: COLORS.primary, padding: 15, borderRadius: 5, alignItems: 'center', marginTop: 20 }}
-            onPress={handleSaveUser}
-          >
-            <Text style={{ color: '#FFF', fontWeight: 'bold', fontSize: 16 }}>Save Changes</Text>
-          </TouchableOpacity>
+        {/* Tabs */}
+        <View style={{ flexDirection: 'row', marginBottom: 20 }}>
+          {['profile', 'limits', 'rates'].map(tab => (
+            <TouchableOpacity
+              key={tab}
+              style={{
+                paddingVertical: 10, paddingHorizontal: 20,
+                borderBottomWidth: activeUserTab === tab ? 3 : 0,
+                borderBottomColor: COLORS.primary
+              }}
+              onPress={() => setActiveUserTab(tab)}
+            >
+              <Text style={{ fontWeight: 'bold', color: activeUserTab === tab ? COLORS.primary : '#666', textTransform: 'capitalize' }}>{tab}</Text>
+            </TouchableOpacity>
+          ))}
         </View>
+
+        <View style={{ flex: 1, backgroundColor: '#FFF', padding: 15, borderRadius: 8 }}>
+
+          {/* TAB 1: PROFILE */}
+          {activeUserTab === 'profile' && (
+            <View>
+              <Text style={styles.inputLabel}>Username</Text>
+              <TextInput
+                style={styles.inputField}
+                value={userForm.username}
+                onChangeText={t => updateForm('username', t)}
+                editable={editingUser.id === 'new'} // No edit username
+              />
+
+              <Text style={styles.inputLabel}>Password</Text>
+              <TextInput
+                style={styles.inputField}
+                value={userForm.password}
+                onChangeText={t => updateForm('password', t)}
+                placeholder={editingUser.id !== 'new' ? "(Unchanged)" : ""}
+                secureTextEntry={false}
+              />
+
+              {editingUser.id === 'new' && (
+                <>
+                  <Text style={styles.inputLabel}>Initial Balance</Text>
+                  <TextInput
+                    style={styles.inputField}
+                    value={userForm.balance}
+                    onChangeText={t => updateForm('balance', t)}
+                    keyboardType="numeric"
+                  />
+                </>
+              )}
+
+              <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginTop: 20, alignItems: 'center' }}>
+                <Text style={{ fontSize: 16 }}>Active Status</Text>
+                <Switch
+                  value={userForm.isActive}
+                  onValueChange={v => updateForm('isActive', v)}
+                />
+              </View>
+            </View>
+          )}
+
+          {/* TAB 2: LIMITS */}
+          {activeUserTab === 'limits' && (
+            <ScrollView>
+              <Text style={{ fontWeight: 'bold', marginBottom: 10, fontSize: 16 }}>Sales Limits</Text>
+              <View style={{ flexDirection: 'row', gap: 10 }}>
+                <View style={{ flex: 1 }}>
+                  <Text style={styles.inputLabel}>Daily Limit</Text>
+                  <TextInput style={styles.inputField} value={userForm.dailyLimit} onChangeText={t => updateForm('dailyLimit', t)} keyboardType="numeric" placeholder="No Limit" />
+                </View>
+                <View style={{ flex: 1 }}>
+                  <Text style={styles.inputLabel}>Weekly Limit</Text>
+                  <TextInput style={styles.inputField} value={userForm.weeklyLimit} onChangeText={t => updateForm('weeklyLimit', t)} keyboardType="numeric" placeholder="No Limit" />
+                </View>
+              </View>
+
+              <Text style={{ fontWeight: 'bold', marginVertical: 10, fontSize: 16 }}>Count Limits (Per Number)</Text>
+              <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 10 }}>
+                <View style={{ width: '48%' }}>
+                  <Text style={styles.inputLabel}>Single</Text>
+                  <TextInput style={styles.inputField} value={userForm.singleLimit} onChangeText={t => updateForm('singleLimit', t)} keyboardType="numeric" />
+                </View>
+                <View style={{ width: '48%' }}>
+                  <Text style={styles.inputLabel}>Double</Text>
+                  <TextInput style={styles.inputField} value={userForm.doubleLimit} onChangeText={t => updateForm('doubleLimit', t)} keyboardType="numeric" />
+                </View>
+                <View style={{ width: '48%' }}>
+                  <Text style={styles.inputLabel}>Lsk Super</Text>
+                  <TextInput style={styles.inputField} value={userForm.superLimit} onChangeText={t => updateForm('superLimit', t)} keyboardType="numeric" />
+                </View>
+                <View style={{ width: '48%' }}>
+                  <Text style={styles.inputLabel}>Box</Text>
+                  <TextInput style={styles.inputField} value={userForm.boxLimit} onChangeText={t => updateForm('boxLimit', t)} keyboardType="numeric" />
+                </View>
+              </View>
+
+              <Text style={{ fontWeight: 'bold', marginTop: 15, marginBottom: 5 }}>Blocked Numbers</Text>
+              <TextInput
+                style={[styles.inputField, { height: 60 }]}
+                multiline
+                placeholder="123, 45, 99..."
+                value={userForm.blockedNumbers}
+                onChangeText={t => updateForm('blockedNumbers', t)}
+              />
+            </ScrollView>
+          )}
+
+          {/* TAB 3: RATES */}
+          {activeUserTab === 'rates' && (
+            <View>
+              <View style={{ flexDirection: 'row', backgroundColor: '#EEE', padding: 8, marginBottom: 5 }}>
+                <Text style={{ flex: 1, fontWeight: 'bold' }}>Type</Text>
+                <Text style={{ flex: 1, fontWeight: 'bold' }}>My Rate</Text>
+                <Text style={{ flex: 1, fontWeight: 'bold' }}>Assign</Text>
+                <Text style={{ flex: 1, fontWeight: 'bold' }}>Margin</Text>
+              </View>
+              {rateTypes.map((item) => {
+                const myRate = rates[item.key] || 0;
+                const assignData = userForm.rates[item.key] || { assign: myRate.toString() }; // Default to My Rate
+                const assignVal = parseFloat(assignData.assign) || 0;
+                const margin = (myRate - assignVal).toFixed(2);
+
+                return (
+                  <View key={item.key} style={{ flexDirection: 'row', paddingVertical: 10, alignItems: 'center', borderBottomWidth: 1, borderBottomColor: '#f0f0f0' }}>
+                    <Text style={{ flex: 1 }}>{item.label}</Text>
+                    <Text style={{ flex: 1, color: '#666' }}>{myRate}</Text>
+                    <TextInput
+                      style={{ flex: 1, borderWidth: 1, borderColor: '#CCC', padding: 2, marginRight: 5, textAlign: 'center' }}
+                      value={assignData.assign}
+                      onChangeText={t => updateRate(item.key, 'assign', t)}
+                      keyboardType="numeric"
+                    />
+                    <Text style={{ flex: 1, fontWeight: 'bold', color: margin >= 0 ? 'green' : 'red' }}>{margin}</Text>
+                  </View>
+                );
+              })}
+            </View>
+          )}
+        </View>
+
+        <TouchableOpacity style={{ backgroundColor: COLORS.btnGreen, padding: 15, alignItems: 'center', borderRadius: 8, marginTop: 10 }} onPress={handleSave}>
+          <Text style={{ color: '#FFF', fontWeight: 'bold', fontSize: 18 }}>SAVE USER</Text>
+        </TouchableOpacity>
       </View>
     );
   };
@@ -683,82 +812,92 @@ export default function App() {
   const renderUsers = () => {
     if (editingUser) return renderUserDetail();
 
+    const openCreateUser = () => {
+      setEditingUser({ id: 'new', username: 'New User' });
+      setActiveUserTab('profile');
+      setUserForm({
+        username: '', password: '', balance: '',
+        dailyLimit: '', weeklyLimit: '',
+        singleLimit: '', doubleLimit: '', superLimit: '', boxLimit: '',
+        blockedNumbers: '',
+        rates: {}, // Start empty, will default to My Rates in UI
+        isActive: true
+      });
+    };
+
+    const openEditUser = async (user) => {
+      setEditingUser(user);
+      setActiveUserTab('profile');
+
+      // Load Data
+      const { data: limits } = await ticketService.getUserLimits(user.id);
+      const { data: userRates } = await ticketService.getUserRates(user.id);
+
+      // Map to Form
+      setUserForm({
+        username: user.username,
+        password: '', // Don't show hash
+        balance: user.balance ? user.balance.toString() : '0',
+        dailyLimit: limits?.daily_sales_limit ? limits.daily_sales_limit.toString() : '',
+        weeklyLimit: limits?.weekly_sales_limit ? limits.weekly_sales_limit.toString() : '',
+        singleLimit: limits?.max_single_number_count ? limits.max_single_number_count.toString() : '',
+        doubleLimit: limits?.type_limits?.double ? limits.type_limits.double.toString() : '',
+        superLimit: limits?.type_limits?.super ? limits.type_limits.super.toString() : '',
+        boxLimit: limits?.type_limits?.box ? limits.type_limits.box.toString() : '',
+        blockedNumbers: limits?.blocked_numbers || '',
+        rates: (() => {
+          const mapped = {};
+          if (userRates) {
+            Object.keys(userRates).forEach(k => {
+              mapped[k] = { assign: userRates[k].toString() };
+            });
+          }
+          return mapped;
+        })(),
+        isActive: user.is_active
+      });
+    };
+
     return (
       <View style={{ flex: 1, padding: 20 }}>
         <Text style={{ fontSize: 20, fontWeight: 'bold', marginBottom: 20, color: COLORS.primary }}>
-          Create Sub-User
+          User Management
         </Text>
-
-        <Text style={{ marginBottom: 5 }}>New Username:</Text>
-        <TextInput
-          style={styles.inputField}
-          value={newUsername} onChangeText={setNewUsername}
-          placeholder="Username" autoCapitalize="none"
-        />
-
-        <Text style={{ marginBottom: 5, marginTop: 10 }}>New Password:</Text>
-        <TextInput
-          style={styles.inputField}
-          value={newPassword} onChangeText={setNewPassword}
-          placeholder="Password"
-        />
-
-        <Text style={{ marginBottom: 5, marginTop: 10 }}>Initial Balance:</Text>
-        <TextInput
-          style={styles.inputField}
-          value={newBalance} onChangeText={setNewBalance}
-          placeholder="0.00" keyboardType="numeric"
-        />
 
         <TouchableOpacity
           style={{
             backgroundColor: COLORS.btnGreen, padding: 15, borderRadius: 5,
-            marginTop: 20, alignItems: 'center'
+            marginBottom: 20, alignItems: 'center', flexDirection: 'row', justifyContent: 'center'
           }}
-          onPress={async () => {
-            if (!newUsername || !newPassword) { alert('Fill all fields'); return; }
-
-            const { data, error } = await ticketService.createUser(
-              agent, newUsername.trim(), newPassword.trim(), newBalance
-            );
-
-            if (error) alert('Error: ' + error);
-            else {
-              alert(`Success! Created User: ${data.username} (${data.role})`);
-              setNewUsername(''); setNewPassword(''); setNewBalance('');
-              loadSubUsers();
-            }
-          }}
+          onPress={openCreateUser}
         >
-          <Text style={{ color: '#FFF', fontWeight: 'bold' }}>CREATE USER</Text>
+          <Ionicons name="person-add" size={20} color="#FFF" style={{ marginRight: 10 }} />
+          <Text style={{ color: '#FFF', fontWeight: 'bold', fontSize: 16 }}>CREATE NEW USER</Text>
         </TouchableOpacity>
 
         {/* Existing Users List */}
-        <View style={{ marginTop: 30 }}>
+        <View style={{ flex: 1 }}>
           <Text style={{ fontSize: 18, fontWeight: 'bold', marginBottom: 10, color: '#333' }}>Existing Customers</Text>
-          {subUsers && subUsers.length > 0 ? subUsers.map((user, i) => (
-            <View key={user.id} style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingVertical: 15, borderBottomWidth: 1, borderBottomColor: '#EEE' }}>
-              <View>
-                <Text style={{ fontSize: 18, fontWeight: 'bold', color: user.is_active ? '#333' : 'red' }}>{user.username}</Text>
-                <Text style={{ color: '#666' }}>Role: {user.role}</Text>
+          <ScrollView>
+            {subUsers && subUsers.length > 0 ? subUsers.map((user, i) => (
+              <View key={user.id} style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingVertical: 15, borderBottomWidth: 1, borderBottomColor: '#EEE' }}>
+                <View>
+                  <Text style={{ fontSize: 18, fontWeight: 'bold', color: user.is_active ? '#333' : 'red' }}>{user.username}</Text>
+                  <Text style={{ color: '#666' }}>Role: {user.role}</Text>
+                </View>
+                <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                  <Text style={{ fontWeight: 'bold', color: COLORS.primary, marginRight: 15 }}>₹{user.balance}</Text>
+                  <TouchableOpacity onPress={() => openEditUser(user)}>
+                    <Ionicons name="create-outline" size={24} color="#555" />
+                  </TouchableOpacity>
+                </View>
               </View>
-              <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-                <Text style={{ fontWeight: 'bold', color: COLORS.primary, marginRight: 15 }}>₹{user.balance}</Text>
-                <TouchableOpacity onPress={() => {
-                  setEditingUser(user);
-                  setEditIsActive(user.is_active);
-                  setEditLimits({ daily: '', weekly: '', single: '' });
-                  setEditBlockedNumbers('');
-                  // Ideally fetch limits here. Assuming for now we rely on user inputting new values or we fetch in useEffect when editingUser changes.
-                }}>
-                  <Ionicons name="create-outline" size={24} color="#555" />
-                </TouchableOpacity>
-              </View>
-            </View>
-          )) : <Text>No customers found.</Text>}
+            )) : <Text>No customers found.</Text>}
+            <View style={{ height: 50 }} />
+          </ScrollView>
         </View>
 
-        <View style={{ marginTop: 20, borderTopWidth: 1, borderTopColor: '#CCC', paddingTop: 20 }}>
+        <View style={{ marginTop: 10, borderTopWidth: 1, borderTopColor: '#CCC', paddingTop: 10 }}>
           <TouchableOpacity
             style={[styles.actionButton, { backgroundColor: COLORS.secondary }]}
             onPress={() => { setCurrentView('rates'); loadRates(); }}
