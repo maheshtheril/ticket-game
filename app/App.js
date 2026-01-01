@@ -1500,6 +1500,9 @@ const renderSideMenu = () => (
     >
       <Ionicons name="close" size={30} color="#FFF" />
     </TouchableOpacity>
+    <View style={{ position: 'absolute', bottom: 10, left: 20 }}>
+      <Text style={{ color: '#CCC', fontSize: 12 }}>v1.4</Text>
+    </View>
   </Animated.View>
 );
 
