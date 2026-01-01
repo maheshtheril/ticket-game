@@ -150,6 +150,14 @@ export const ticketService = {
         return { data: games, error: null };
     },
 
+    async toggleGameStatus(gameId, isActive) {
+        const { error } = await supabase
+            .from('game_schedules')
+            .update({ is_active: isActive })
+            .eq('id', gameId);
+        return { error };
+    },
+
     // 3. Helper: Get User Scheme Rates
     async getUserRates(userId) {
         // Get user's scheme_id
