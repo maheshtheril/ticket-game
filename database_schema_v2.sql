@@ -60,3 +60,33 @@ VALUES ('demo_agent', 'hashed_pass', 'sub_agent', 10000.00);
 -- 8. Enable RLS (Security) but allow all for now (for easy testing)
 ALTER TABLE tickets ENABLE ROW LEVEL SECURITY;
 CREATE POLICY "Enable all access for now" ON tickets FOR ALL USING (true);
+
+
+-- 9. USER LIMITS
+CREATE TABLE user_limits (
+    user_id INT PRIMARY KEY REFERENCES users(id),
+    daily_sales_limit DECIMAL(15, 2),
+    weekly_sales_limit DECIMAL(15, 2),
+    max_single_number_count INT,
+    blocked_numbers TEXT,
+    special_number_limits JSONB
+);
+
+-- 10. SCHEMES
+CREATE TABLE schemes (
+    id SERIAL PRIMARY KEY,
+    name VARCHAR(100)
+);
+
+-- 11. SCHEME RATES
+CREATE TABLE scheme_rates (
+    id SERIAL PRIMARY KEY,
+    scheme_id INT REFERENCES schemes(id),
+    ticket_type VARCHAR(50),
+    buy_rate DECIMAL(10, 2),
+    sell_rate DECIMAL(10, 2),
+    UNIQUE(scheme_id, ticket_type)
+);
+
+-- 12. Add scheme link to users
+ALTER TABLE users ADD COLUMN scheme_id INT REFERENCES schemes(id);

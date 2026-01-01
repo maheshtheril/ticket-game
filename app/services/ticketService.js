@@ -33,7 +33,6 @@ export const ticketService = {
 
     // 0.1 Create User (Recursive Hierarchy)
     async createUser(currentUser, newUsername, newPassword, initialBalance) {
-        // hierarchy map
         const roleMap = {
             'admin': 'main_agent',
             'main_agent': 'sub_agent',
@@ -47,7 +46,8 @@ export const ticketService = {
         }
 
         try {
-            const { data, error } = await supabase
+            // 1. Create User
+            const { data: newUser, error } = await supabase
                 .from('users')
                 .insert([{
                     username: newUsername,
@@ -61,7 +61,59 @@ export const ticketService = {
                 .single();
 
             if (error) throw error;
-            return { data, error: null };
+
+            // 2. Inherit Limits (Copy from Parent)
+            const { data: parentLimits } = await supabase
+                .from('user_limits')
+                .select('*')
+                .eq('user_id', currentUser.id)
+                .single();
+
+            if (parentLimits) {
+                await supabase.from('user_limits').insert([{
+                    user_id: newUser.id,
+                    daily_sales_limit: parentLimits.daily_sales_limit,
+                    weekly_sales_limit: parentLimits.weekly_sales_limit,
+                    max_single_number_count: parentLimits.max_single_number_count,
+                    blocked_numbers: parentLimits.blocked_numbers,
+                    special_number_limits: parentLimits.special_number_limits
+                }]);
+            }
+
+            // 3. Inherit Rates (Copy from Parent Scheme)
+            const { data: parentUser } = await supabase.from('users').select('scheme_id').eq('id', currentUser.id).single();
+
+            if (parentUser && parentUser.scheme_id) {
+                // 3.1 Create New Scheme for Child
+                const { data: newScheme, error: schemeError } = await supabase
+                    .from('schemes')
+                    .insert([{ name: `Scheme for ${newUser.username}` }])
+                    .select('id')
+                    .single();
+
+                if (!schemeError) {
+                    // 3.2 Copy Rates
+                    const { data: parentRates } = await supabase
+                        .from('scheme_rates')
+                        .select('ticket_type, buy_rate, sell_rate')
+                        .eq('scheme_id', parentUser.scheme_id);
+
+                    if (parentRates && parentRates.length > 0) {
+                        const rateInserts = parentRates.map(r => ({
+                            scheme_id: newScheme.id,
+                            ticket_type: r.ticket_type,
+                            buy_rate: r.buy_rate, // Inherit Rate
+                            sell_rate: r.sell_rate
+                        }));
+                        await supabase.from('scheme_rates').insert(rateInserts);
+                    }
+
+                    // 3.3 Assign Scheme to Child
+                    await supabase.from('users').update({ scheme_id: newScheme.id }).eq('id', newUser.id);
+                }
+            }
+
+            return { data: newUser, error: null };
         } catch (err) {
             return { error: err.message };
         }
@@ -116,13 +168,28 @@ export const ticketService = {
 
     // 3.1 Update User Rates
     async updateUserRates(targetUserId, ratesMap) {
-        // 1. Get Target User
-        const { data: user } = await supabase.from('users').select('scheme_id, username').eq('id', targetUserId).single();
+        // 1. Get Target User & Parent
+        const { data: user } = await supabase.from('users').select('scheme_id, username, parent_id').eq('id', targetUserId).single();
         if (!user) return { error: 'User not found' };
+
+        // **Validation: Check against Parent Rates**
+        if (user.parent_id) {
+            const parentRates = await this.getUserRates(user.parent_id);
+            for (const type of Object.keys(ratesMap)) {
+                const newRate = parseFloat(ratesMap[type]);
+                const parentRate = parseFloat(parentRates[type]);
+
+                // If parent has no rate for this type, can child have it? Assuming 0.
+                // "Child rate <= Parent rate"
+                if (!isNaN(parentRate) && newRate > parentRate) {
+                    return { error: `Rate for ${type} (${newRate}) cannot exceed Reference/Parent Rate (${parentRate})` };
+                }
+            }
+        }
 
         let schemeId = user.scheme_id;
 
-        // 2. If no scheme, create one (Assuming 'schemes' table exists)
+        // 2. If no scheme, create one
         if (!schemeId) {
             const { data: newScheme, error: schemeError } = await supabase
                 .from('schemes')
@@ -131,8 +198,6 @@ export const ticketService = {
                 .single();
 
             if (schemeError) {
-                // Fallback: If table scheme is different, maybe we just need ID? 
-                // Or schemes table doesn't exist? But getUserRates queries scheme_rates.
                 console.error('Scheme creation failed', schemeError);
                 return { error: 'Failed to create scheme. Contact Admin.' };
             }
@@ -219,6 +284,23 @@ export const ticketService = {
 
     // 4.1 Update User Limits
     async updateUserLimits(userId, limits) {
+        // Validation: Check Parent
+        const { data: user } = await supabase.from('users').select('parent_id').eq('id', userId).single();
+        if (user && user.parent_id) {
+            const { data: parentLimits } = await supabase.from('user_limits').select('*').eq('user_id', user.parent_id).single();
+            if (parentLimits) {
+                if (limits.daily_sales_limit && parseFloat(limits.daily_sales_limit) > parseFloat(parentLimits.daily_sales_limit)) {
+                    return { error: `Daily Limit cannot exceed Parent's Limit (${parentLimits.daily_sales_limit})` };
+                }
+                if (limits.weekly_sales_limit && parseFloat(limits.weekly_sales_limit) > parseFloat(parentLimits.weekly_sales_limit)) {
+                    return { error: `Weekly Limit cannot exceed Parent's Limit (${parentLimits.weekly_sales_limit})` };
+                }
+                if (limits.max_single_number_count && parseInt(limits.max_single_number_count) > parseInt(parentLimits.max_single_number_count)) {
+                    return { error: `Max Count cannot exceed Parent's Limit (${parentLimits.max_single_number_count})` };
+                }
+            }
+        }
+
         // limits: { daily_sales_limit: 1000, max_single_number_count: 50, ... }
         const { error } = await supabase
             .from('user_limits')
