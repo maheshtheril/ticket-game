@@ -709,7 +709,7 @@ export default function App() {
     );
   };
 
-  const SideMenu = () => (
+  const renderSideMenu = () => (
     <Animated.View style={{
       position: 'absolute', top: 0, bottom: 0, left: menuAnim, width: 300,
       backgroundColor: '#FFF', zIndex: 5000, elevation: 20,
@@ -1024,7 +1024,7 @@ export default function App() {
           onPress={toggleMenu}
         />
       )}
-      <SideMenu />
+      {renderSideMenu()}
 
       {currentView === 'results' && (
         <View style={styles.formContainer}>
