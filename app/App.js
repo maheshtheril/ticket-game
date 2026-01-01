@@ -1137,7 +1137,7 @@ export default function App() {
         try {
           const { data } = await ticketService.getGameById(gameObj.id);
           freshGame = data;
-        } catch (e) { colsole.error(e); }
+        } catch (e) { console.error(e); }
       }
       const game = freshGame || gameObj;
 
