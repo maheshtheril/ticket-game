@@ -70,7 +70,7 @@ export default function App() {
   const [rates, setRates] = useState({}); // Store user rates
   const [assignedRates, setAssignedRates] = useState({}); // New rates for sub-user
   const [isMenuOpen, setIsMenuOpen] = useState(false); // Side Menu State
-  const [menuAnim] = useState(new Animated.Value(-300)); // Slide animation
+  const menuAnim = React.useRef(new Animated.Value(-300)).current; // Slide animation
 
   // Edit User State
   const [editingUser, setEditingUser] = useState(null);
@@ -770,14 +770,7 @@ export default function App() {
 
 
 
-      {/* Side Menu Overlay */}
-      <SideMenu />
-      {isMenuOpen && (
-        <TouchableOpacity
-          style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(0,0,0,0.5)', zIndex: 4000 }}
-          onPress={toggleMenu}
-        />
-      )}
+
 
       {/* Main Header */}
       <View style={styles.header}>
@@ -1023,6 +1016,15 @@ export default function App() {
 
       {/* VIEW: USER MANAGEMENT */}
       {currentView === 'users' && renderUsers()}
+
+      {/* Side Menu Overlay (Moved to bottom for Z-Index) */}
+      {isMenuOpen && (
+        <TouchableOpacity
+          style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(0,0,0,0.5)', zIndex: 4000 }}
+          onPress={toggleMenu}
+        />
+      )}
+      <SideMenu />
 
       {currentView === 'results' && (
         <View style={styles.formContainer}>
