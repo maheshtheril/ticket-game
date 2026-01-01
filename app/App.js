@@ -1346,6 +1346,20 @@ const ActionButton = ({ label, color, onPress }) => (
   </TouchableOpacity>
 );
 
+// Checkbox Component (internal)
+const Checkbox = ({ label, checked, onPress }) => (
+  <TouchableOpacity style={{ flexDirection: 'row', alignItems: 'center', marginRight: 15 }} onPress={onPress}>
+    <View style={{
+      width: 24, height: 24, borderWidth: 2, borderColor: '#555',
+      justifyContent: 'center', alignItems: 'center', marginRight: 8,
+      borderRadius: 4
+    }}>
+      {checked && <View style={{ width: 14, height: 14, backgroundColor: COLORS.primary }} />}
+    </View>
+    <Text style={{ fontSize: 16 }}>{label}</Text>
+  </TouchableOpacity>
+);
+
 const styles = StyleSheet.create({
   container: {
     flex: 1,
