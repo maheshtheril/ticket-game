@@ -1649,6 +1649,7 @@ return (
     {currentView === 'rates' && renderRates()}
     {currentView === 'prizes' && renderPrizes()}
     {currentView === 'adminPanel' && renderAdminPanel()}
+    {currentView === 'adminPanel' && renderAdminPanel()}
 
 
     {currentView === 'game' && (
