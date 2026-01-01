@@ -158,12 +158,29 @@ export const ticketService = {
 
         const { data: rates } = await supabase
             .from('scheme_rates')
-            .select('ticket_type, buy_rate')
+            .select('ticket_type, buy_rate, commission, payout')
             .eq('scheme_id', user.scheme_id);
 
         // Convert to map: { 'single': 10.0, 'double': 11.0 }
         const rateMap = {};
-        if (rates) rates.forEach(r => rateMap[r.ticket_type] = r.buy_rate);
+        if (rates) rates.forEach(r => {
+            // If caller expects just number (legacy), we might break it. 
+            // But we updated App.js to handle object or number logic?
+            // Let's return object, but we need to check usage sites.
+            // Looking at App.js: const myRate = rates[item.key] || 0; 
+            // If we change this to object, App.js 796 will fail (rate becomes object).
+            // However, I updated App.js to handle this in Step 1840? No, I used parseFloat(rates[item.key]).
+            // So I MUST attach properties to the object.
+            // JS allows Number object with properties? No, primitives.
+            // I should store full object and .buy_rate in App.js.
+            rateMap[r.ticket_type] = {
+                buy_rate: r.buy_rate,
+                commission: r.commission,
+                payout: r.payout,
+                // Backward compat
+                toString: () => r.buy_rate.toString()
+            };
+        });
         return rateMap;
     },
 

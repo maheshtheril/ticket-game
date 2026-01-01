@@ -629,13 +629,34 @@ export default function App() {
 
       // 3. Rates & Prizes
       const rateUpdates = {};
+      let validationError = null;
       Object.keys(userForm.rates).forEach(k => {
+        const myRateObj = rates[k] || {}; // This is now an object with .buy_rate, .payout, .commission
+        const myPayout = parseFloat(myRateObj.payout) || 0;
+        const myComm = parseFloat(myRateObj.commission) || 0;
+
+        const assignPayout = parseFloat(userForm.rates[k]?.payout) || 0;
+        const assignComm = parseFloat(userForm.rates[k]?.comm) || 0;
+
+        // Validation: Child Payout cannot > Parent Payout
+        if (myPayout > 0 && assignPayout > myPayout) {
+          validationError = `Error: ${k} Prize (${assignPayout}) cannot exceed My Prize (${myPayout})`;
+        }
+        // Validation: Child Comm cannot > Parent Comm (Usually. Or is it Parent gives X%?)
+        // Assuming strict hierarchy: Parent has 10% from GrandParent. Parent keeps 2%, gives Child 8%.
+        // If Parent has 10% Comm, Child cannot have 12%.
+        if (myComm > 0 && assignComm > myComm) {
+          validationError = `Error: ${k} Commission (${assignComm}%) cannot exceed My Commission (${myComm}%)`;
+        }
+
         rateUpdates[k] = {
           buy_rate: userForm.rates[k]?.assign,
           commission: userForm.rates[k]?.comm,
           payout: userForm.rates[k]?.payout
         };
       });
+
+      if (validationError) { alert(validationError); return; }
 
       if (Object.keys(rateUpdates).length > 0) {
         const { error: rateErr } = await ticketService.updateUserRates(editingUser.id, rateUpdates);
@@ -807,7 +828,8 @@ export default function App() {
                 <Text style={{ flex: 1, fontWeight: 'bold', fontSize: 12 }}>Margin</Text>
               </View>
               {rateTypes.map((item) => {
-                const myRate = parseFloat(rates[item.key] || (agent.role === 'admin' ? 10 : 0)); // Default 10 for admin
+                const myRateObj = rates[item.key] || {};
+                const myRate = parseFloat(myRateObj.buy_rate || (agent.role === 'admin' ? 10 : 0)); // Default 10 for admin
                 const assignData = userForm.rates[item.key] || { assign: myRate.toString() };
                 const assignVal = parseFloat(assignData.assign) || 0;
                 const margin = (myRate - assignVal).toFixed(2);
@@ -839,10 +861,14 @@ export default function App() {
                 <Text style={{ flex: 1, fontWeight: 'bold', fontSize: 12 }}>Comm %</Text>
               </View>
               {rateTypes.map((item) => {
-                // Mock Parent Prizes (In real app, fetch from parent limits/rates)
-                const myPrize = item.key === 'single' ? 95 : item.key === 'double' ? 950 : 5000;
+                const myRateObj = rates[item.key] || {};
+                const myPrize = parseFloat(myRateObj.payout || 0);
+                const myComm = parseFloat(myRateObj.commission || 0);
 
                 const storedRate = userForm.rates[item.key] || {};
+                // If new, default to 0 or My Prize? User said "above parent's should not be saved".
+                // So we can show My Prize as place holder but let user enter.
+                // OR default to current My Prize
 
                 return (
                   <View key={item.key} style={{ flexDirection: 'row', paddingVertical: 12, alignItems: 'center', borderBottomWidth: 1, borderBottomColor: '#f0f0f0' }}>
