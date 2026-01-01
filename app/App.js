@@ -1638,7 +1638,8 @@ return (
             currentView === 'rates' ? 'Rate Master' :
               currentView === 'prizes' ? 'Prize & Comm' :
                 currentView === 'users' ? 'Customer' :
-                  currentView === 'game' ? 'Ticket Sale' : 'PVC'}
+                  currentView === 'adminPanel' ? 'Admin Panel' :
+                    currentView === 'game' ? 'Ticket Sale' : 'PVC'}
         </Text>
       </View>
       <Text style={{ fontSize: 16, fontWeight: 'bold', color: '#FFF' }}>{agent ? agent.username : ''}</Text>
@@ -1648,7 +1649,6 @@ return (
     {currentView === 'dashboard' && renderDashboard()}
     {currentView === 'rates' && renderRates()}
     {currentView === 'prizes' && renderPrizes()}
-    {currentView === 'adminPanel' && renderAdminPanel()}
     {currentView === 'adminPanel' && renderAdminPanel()}
 
 
