@@ -1130,7 +1130,11 @@ export default function App() {
       else loadAllGames();
     };
 
-    const openTimeSettings = (game) => {
+    const openTimeSettings = async (gameObj) => {
+      // Fetch fresh data to ensure we have latest times
+      const { data: freshGame } = await ticketService.getGameById(gameObj.id);
+      const game = freshGame || gameObj;
+
       setEditingGame(game);
       setTimeForm({
         closeTime: game.close_time || '',

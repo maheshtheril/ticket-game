@@ -155,6 +155,15 @@ export const ticketService = {
         return { data: games, error: null };
     },
 
+    async getGameById(id) {
+        const { data, error } = await supabase
+            .from('game_schedules')
+            .select('*')
+            .eq('id', id)
+            .single();
+        return { data, error };
+    },
+
     async toggleGameStatus(gameId, isActive) {
         const { error } = await supabase
             .from('game_schedules')
