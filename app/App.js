@@ -384,6 +384,7 @@ export default function App() {
 
   const navigateTo = (view) => {
     setCurrentView(view);
+    if (view === 'rates') loadRates();
     toggleMenu(); // Close menu
   };
 
