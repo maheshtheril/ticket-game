@@ -1131,8 +1131,14 @@ export default function App() {
     };
 
     const openTimeSettings = async (gameObj) => {
-      // Fetch fresh data to ensure we have latest times
-      const { data: freshGame } = await ticketService.getGameById(gameObj.id);
+      // Fetch fresh data safely
+      let freshGame = null;
+      if (ticketService.getGameById) {
+        try {
+          const { data } = await ticketService.getGameById(gameObj.id);
+          freshGame = data;
+        } catch (e) { colsole.error(e); }
+      }
       const game = freshGame || gameObj;
 
       setEditingGame(game);
