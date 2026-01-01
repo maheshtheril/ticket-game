@@ -630,7 +630,8 @@ export default function App() {
         if (userForm.rates[k]?.assign) rateUpdates[k] = userForm.rates[k].assign;
       });
       if (Object.keys(rateUpdates).length > 0) {
-        await ticketService.updateUserRates(editingUser.id, rateUpdates);
+        const { error: rateErr } = await ticketService.updateUserRates(editingUser.id, rateUpdates);
+        if (rateErr) { alert('Error updating rates: ' + rateErr); return; }
       }
 
       // 4. Status
