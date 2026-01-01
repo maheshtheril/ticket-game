@@ -582,7 +582,7 @@ export default function App() {
           </View>
         </TouchableOpacity>
 
-        {agent && agent.role === 'admin' && (
+        {(agent && (agent.role === 'admin' || agent.username === 'admin')) && (
           <TouchableOpacity
             style={[styles.dashboardBtnBlue, { backgroundColor: '#607D8B' }]}
             onPress={() => setCurrentView('adminPanel')}
@@ -1580,7 +1580,7 @@ const renderSideMenu = () => (
       <Text style={styles.menuText}>Prize And Commission</Text>
     </TouchableOpacity>
 
-    {agent && agent.role === 'admin' && (
+    {(agent && (agent.role === 'admin' || agent.username === 'admin')) && (
       <TouchableOpacity style={styles.menuItem} onPress={() => navigateTo('adminPanel')}>
         <Ionicons name="settings-outline" size={24} color="#333" />
         <Text style={styles.menuText}>Admin Panel</Text>
