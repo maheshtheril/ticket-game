@@ -628,31 +628,66 @@ export default function App() {
       await ticketService.updateUserLimits(editingUser.id, limits);
 
       // 3. Rates & Prizes
+      // 3. Rates & Prizes
       const rateUpdates = {};
       let validationError = null;
-      Object.keys(userForm.rates).forEach(k => {
-        const myRateObj = rates[k] || {}; // This is now an object with .buy_rate, .payout, .commission
-        const myPayout = parseFloat(myRateObj.payout) || 0;
+
+      // New Key List (Union of Old and New)
+      const allRateKeys = [
+        'single', 'double', 'super', 'box',
+        'first', 'second', 'third', 'fourth', 'fifth', 'sixth', 'box_first', 'box_series'
+      ];
+
+      // Helper for Admin Defaults (Duplicated from render logic, ideally refactor to constant)
+      const getAdminDefault = (k) => {
+        if (k === 'first') return 5000;
+        if (k === 'second') return 500;
+        if (k === 'third') return 250;
+        if (k === 'fourth') return 100;
+        if (k === 'fifth') return 50;
+        if (k === 'sixth') return 20;
+        if (k === 'box_first') return 3000;
+        if (k === 'box_series') return 800;
+        if (k === 'single') return 100;
+        if (k === 'double') return 700;
+        return 0;
+      };
+
+      allRateKeys.forEach(k => {
+        // If this key wasn't edited, check if we need to save defaults?
+        // If editingUser is new, we should save defaults. 
+        // If editing existing, we only update if changed? 
+        // TicketService upserts, so saving all is checks.
+
+        const myRateObj = rates[k] || {};
+        const defaultPrize = getAdminDefault(k);
+
+        const myPayout = parseFloat(myRateObj.payout || (agent.role === 'admin' ? defaultPrize : 0));
         const myComm = parseFloat(myRateObj.commission) || 0;
+        const myBuyRate = parseFloat(myRateObj.buy_rate) || 0; // Or admin default?
 
-        const assignPayout = parseFloat(userForm.rates[k]?.payout) || 0;
-        const assignComm = parseFloat(userForm.rates[k]?.comm) || 0;
+        const storedRate = userForm.rates[k] || {};
 
-        // Validation: Child Payout cannot > Parent Payout
+        // Determine values to save
+        // If undefined in form, use Parent/Default value
+        const assignPayout = storedRate.payout !== undefined ? parseFloat(storedRate.payout) : myPayout;
+        const assignComm = storedRate.comm !== undefined ? parseFloat(storedRate.comm) : myComm;
+        const assignBuyRate = storedRate.assign !== undefined ? parseFloat(storedRate.assign) : myBuyRate;
+
+        // Validation
         if (myPayout > 0 && assignPayout > myPayout) {
           validationError = `Error: ${k} Prize (${assignPayout}) cannot exceed My Prize (${myPayout})`;
         }
-        // Validation: Child Comm cannot > Parent Comm (Usually. Or is it Parent gives X%?)
-        // Assuming strict hierarchy: Parent has 10% from GrandParent. Parent keeps 2%, gives Child 8%.
-        // If Parent has 10% Comm, Child cannot have 12%.
         if (myComm > 0 && assignComm > myComm) {
           validationError = `Error: ${k} Commission (${assignComm}%) cannot exceed My Commission (${myComm}%)`;
         }
 
+        // Only add to payload if we have values or it's a new user
+        // For simplicity, save all keys that have valid data
         rateUpdates[k] = {
-          buy_rate: userForm.rates[k]?.assign,
-          commission: userForm.rates[k]?.comm,
-          payout: userForm.rates[k]?.payout
+          buy_rate: assignBuyRate,
+          commission: assignComm,
+          payout: assignPayout
         };
       });
 
@@ -855,45 +890,74 @@ export default function App() {
           {activeUserTab === 'prizes' && (
             <ScrollView>
               <View style={{ flexDirection: 'row', backgroundColor: '#EEE', padding: 8, marginBottom: 5 }}>
-                <Text style={{ flex: 1.5, fontWeight: 'bold' }}>Type</Text>
-                <Text style={{ flex: 1, fontWeight: 'bold', fontSize: 12 }}>My Prize</Text>
-                <Text style={{ flex: 1.2, fontWeight: 'bold', fontSize: 12 }}>Assign Prize</Text>
-                <Text style={{ flex: 1, fontWeight: 'bold', fontSize: 12 }}>Comm %</Text>
+                <Text style={{ flex: 1.5, fontWeight: 'bold' }}>Prize</Text>
+                <Text style={{ flex: 1, fontWeight: 'bold', fontSize: 12 }}>Rate</Text>
+                <Text style={{ flex: 1, fontWeight: 'bold', fontSize: 12 }}>Super</Text>
               </View>
-              {rateTypes.map((item) => {
-                const myRateObj = rates[item.key] || {};
 
-                // Admin Defaults if missing
-                const defaultPrize = item.key === 'single' ? 95 : item.key === 'double' ? 950 : 5000;
+              {(() => {
+                const prizeTypes = [
+                  { label: 'First', key: 'first' },
+                  { label: 'Second', key: 'second' },
+                  { label: 'Third', key: 'third' },
+                  { label: 'Fourth', key: 'fourth' },
+                  { label: 'Fifth', key: 'fifth' },
+                  { label: 'Guarantee (Six)', key: 'sixth' },
+                  { label: 'Box First Price', key: 'box_first' },
+                  { label: 'Box Series', key: 'box_series' },
+                  { label: 'Single(1)', key: 'single' },
+                  { label: 'Double(2)', key: 'double' },
+                ];
 
-                const myPrize = parseFloat(myRateObj.payout || (agent.role === 'admin' ? defaultPrize : 0));
-                const myComm = parseFloat(myRateObj.commission || 0);
+                return prizeTypes.map((item) => {
+                  const k = item.key;
+                  const myRateObj = rates[k] || {};
 
-                const storedRate = userForm.rates[item.key] || {};
+                  // Admin Defaults
+                  // Mock defaults based on screenshot examples
+                  let defaultPrize = 0;
+                  if (k === 'first') defaultPrize = 5000;
+                  else if (k === 'second') defaultPrize = 500;
+                  else if (k === 'third') defaultPrize = 250;
+                  else if (k === 'fourth') defaultPrize = 100;
+                  else if (k === 'fifth') defaultPrize = 50;
+                  else if (k === 'sixth') defaultPrize = 20;
+                  else if (k === 'box_first') defaultPrize = 3000;
+                  else if (k === 'box_series') defaultPrize = 800;
+                  else if (k === 'single') defaultPrize = 100;
+                  else if (k === 'double') defaultPrize = 700;
 
-                // Default Assign value to My Prize if not yet edited (Pre-fill)
-                const assignPrizeVal = storedRate.payout !== undefined ? storedRate.payout : myPrize.toString();
-                const assignCommVal = storedRate.comm !== undefined ? storedRate.comm : myComm.toString();
+                  // For Commission ("Super"), user called it Super. Screenshot shows values like 400, 50, etc.
+                  let defaultComm = 0; // Usually specific to agent structure, defaulting to 0 or mock?
+                  // Admin starts with full values maybe?
 
-                return (
-                  <View key={item.key} style={{ flexDirection: 'row', paddingVertical: 12, alignItems: 'center', borderBottomWidth: 1, borderBottomColor: '#f0f0f0' }}>
-                    <Text style={{ flex: 1.5, fontSize: 14 }}>{item.label}</Text>
-                    <Text style={{ flex: 1, color: '#555' }}>{myPrize}</Text>
-                    <TextInput
-                      style={{ flex: 1.2, borderWidth: 1, borderColor: '#CCC', padding: 4, marginRight: 5, textAlign: 'center', backgroundColor: '#FAFAFA' }}
-                      value={assignPrizeVal}
-                      onChangeText={t => updateRate(item.key, 'payout', t)}
-                      keyboardType="numeric"
-                    />
-                    <TextInput
-                      style={{ flex: 1, borderWidth: 1, borderColor: '#CCC', padding: 4, textAlign: 'center', backgroundColor: '#FAFAFA' }}
-                      value={assignCommVal}
-                      onChangeText={t => updateRate(item.key, 'comm', t)}
-                      keyboardType="numeric"
-                    />
-                  </View>
-                );
-              })}
+                  const myPrize = parseFloat(myRateObj.payout || (agent.role === 'admin' ? defaultPrize : 0));
+                  const myComm = parseFloat(myRateObj.commission || 0);
+
+                  const storedRate = userForm.rates[k] || {};
+
+                  const assignPrizeVal = storedRate.payout !== undefined ? storedRate.payout : myPrize.toString();
+                  const assignCommVal = storedRate.comm !== undefined ? storedRate.comm : myComm.toString();
+
+                  return (
+                    <View key={k} style={{ flexDirection: 'row', paddingVertical: 12, alignItems: 'center', borderBottomWidth: 1, borderBottomColor: '#f0f0f0' }}>
+                      <Text style={{ flex: 1.5, fontSize: 14 }}>{item.label}</Text>
+                      <TextInput
+                        style={{ flex: 1, borderWidth: 1, borderColor: '#CCC', padding: 4, marginRight: 5, textAlign: 'center', backgroundColor: '#FAFAFA' }}
+                        value={assignPrizeVal}
+                        onChangeText={t => updateRate(k, 'payout', t)}
+                        keyboardType="numeric"
+                      />
+                      <TextInput
+                        style={{ flex: 1, borderWidth: 1, borderColor: '#CCC', padding: 4, textAlign: 'center', backgroundColor: '#FAFAFA' }}
+                        value={assignCommVal}
+                        onChangeText={t => updateRate(k, 'comm', t)}
+                        keyboardType="numeric"
+                      />
+                    </View>
+                  );
+                });
+              })()}
             </ScrollView>
           )}
         </View>
