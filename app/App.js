@@ -1319,9 +1319,9 @@ export default function App() {
                     <Text style={{ fontWeight: 'bold', fontSize: 16 }}>{g.name || 'Draw'}</Text>
                     <Text style={{ color: '#666' }}>{new Date(g.draw_time).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</Text>
                   </View>
-                  <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
-                    <TouchableOpacity onPress={() => openTimeSettings(g)}>
-                      <Ionicons name="time-outline" size={24} color="#607D8B" />
+                  <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                    <TouchableOpacity onPress={() => openTimeSettings(g)} style={{ marginRight: 15 }}>
+                      <Ionicons name="timer-outline" size={26} color="#607D8B" />
                     </TouchableOpacity>
                     <Switch
                       value={g.is_active}
