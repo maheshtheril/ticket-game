@@ -40,19 +40,25 @@ export default function AdminPanel({ agent, onBack, onNavigate, setEditingUser, 
 
     // Helper: Convert "13:00:00" -> "01:00 PM"
     const formatTimeForDisplay = (timeStr) => {
-        if (!timeStr) return '';
+        if (!timeStr || typeof timeStr !== 'string') return '';
         // Check if already 12h format (simple heuristic)
         if (timeStr.includes('AM') || timeStr.includes('PM')) return timeStr;
 
         try {
-            // Create a dummy date with this time
-            const [hours, minutes] = timeStr.split(':');
-            const date = new Date();
-            date.setHours(parseInt(hours), parseInt(minutes));
-            return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: true });
-        } catch (e) {
-            return timeStr;
-        }
+            // Check if format is HH:mm:ss OR HH:mm
+            const parts = timeStr.split(':');
+            if (parts.length >= 2) {
+                const hours = parseInt(parts[0]);
+                const minutes = parseInt(parts[1]);
+                if (!isNaN(hours) && !isNaN(minutes)) {
+                    const date = new Date();
+                    date.setHours(hours, minutes);
+                    return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: true });
+                }
+            }
+        } catch (e) { }
+
+        return timeStr;
     };
 
     // Helper: Convert "01:00 PM" -> "13:00"
@@ -113,7 +119,21 @@ export default function AdminPanel({ agent, onBack, onNavigate, setEditingUser, 
     };
 
     if (viewMode === 'timeSettings') {
-        const drawTimeStr = new Date(editingGame.draw_time).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: true });
+        let drawTimeStr = 'Unknown';
+        try {
+            const dt = new Date(`2000-01-01T${editingGame.draw_time}`);
+            if (!isNaN(dt.getTime())) {
+                drawTimeStr = dt.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: true });
+            } else {
+                // Fallback if draw_time is full ISO string or other format
+                const dt2 = new Date(editingGame.draw_time);
+                if (!isNaN(dt2.getTime())) {
+                    drawTimeStr = dt2.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: true });
+                } else {
+                    drawTimeStr = editingGame.draw_time; // Just show raw string
+                }
+            }
+        } catch (e) { drawTimeStr = editingGame.draw_time; }
 
         return (
             <View style={{ flex: 1, backgroundColor: '#F5F5F5' }}>
