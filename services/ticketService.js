@@ -373,7 +373,7 @@ export const ticketService = {
         return { data: true, error: null };
     },
 
-    // 2. Buy Tickets (UPDATED)
+    // 2. Buy Tickets (UPDATED with Global Limits)
     async buyTicket(tickets, gameId, userId) {
         if (!tickets || tickets.length === 0) return { error: { message: 'No tickets to save' } };
 
@@ -385,10 +385,7 @@ export const ticketService = {
             const dbTickets = [];
             let totalBatchCost = 0;
 
-            // Pre-process to create DB friendly array
-            // We need draw_id first.
-
-            // Get Draw (Same as before)
+            // Get Draw
             const today = new Date().toISOString().split('T')[0];
             let { data: draw, error: drawError } = await supabase
                 .from('daily_draws').select('id').eq('schedule_id', gameId).eq('draw_date', today).maybeSingle();
@@ -400,26 +397,71 @@ export const ticketService = {
                 draw = newDraw;
             }
 
+            // *** GLOBAL LIMIT CHECK START ***
+            // 1. Fetch Admin User (Assume ID 1 or Role 'admin') to get Global Limits
+            // Optimization: Cache this or fetch once
+            const { data: adminUser } = await supabase.from('users').select('id').eq('role', 'admin').single();
+            let globalLimits = { max_single_number_count: 1000, max_triple_number_count: 50 }; // Defaults
+
+            if (adminUser) {
+                const { data: lim } = await supabase.from('user_limits').select('*').eq('user_id', adminUser.id).single();
+                if (lim) globalLimits = lim;
+            }
+
+            // 2. Aggregate Cart Counts by Type/Number
+            const cartCounts = {}; // { '123_triple_straight': 10 }
             tickets.forEach(t => {
                 const enumType = mapTypeToEnum(t.boxType);
-                const rate = rates[enumType] || 10.00; // Default if no scheme
-                const count = parseInt(t.count);
-                const total = count * rate;
+                const key = `${t.number}_${enumType}`;
+                if (!cartCounts[key]) cartCounts[key] = { number: t.number, type: enumType, count: 0 };
+                cartCounts[key].count += parseInt(t.count);
 
-                totalBatchCost += total;
-
+                // Prepare DB Object
+                const rate = rates[enumType] || 10.00;
+                totalBatchCost += parseInt(t.count) * rate;
                 dbTickets.push({
                     draw_id: draw.id,
                     user_id: userId,
                     ticket_number: t.number,
                     ticket_type: enumType,
-                    count: count,
+                    count: parseInt(t.count),
                     cost_per_unit: rate,
                     status: 'active'
                 });
             });
 
-            // C. Validate Limits
+            // 3. Check DB vs Global Limits
+            // Note: This loop queries DB for each unique number in cart. 
+            // For production, this should be a single RPC or batch query.
+            for (const key of Object.keys(cartCounts)) {
+                const item = cartCounts[key];
+
+                // Determine Limit
+                let maxLimit = 10000;
+                if (item.type === 'single') maxLimit = globalLimits.max_single_number_count || 1000;
+                else if (item.type.includes('triple')) maxLimit = globalLimits.max_triple_number_count || 50; // Use triple limit
+                // Add specific number overrides here if `user_limits` supported it
+
+                // Fetch Current Global Count
+                const { data: usageData, error: usageError } = await supabase
+                    .from('tickets')
+                    .select('count')
+                    .eq('draw_id', draw.id)
+                    .eq('ticket_number', item.number)
+                    .eq('ticket_type', item.type)
+                    .eq('status', 'active');
+
+                if (usageError) console.error("Limit Check Error", usageError);
+
+                const currentGlobalTotal = usageData ? usageData.reduce((sum, row) => sum + row.count, 0) : 0;
+
+                if (currentGlobalTotal + item.count > maxLimit) {
+                    return { error: { message: `Global Limit Exceeded for ${item.number}. Limit: ${maxLimit}, Available: ${maxLimit - currentGlobalTotal}` } };
+                }
+            }
+            // *** GLOBAL LIMIT CHECK END ***
+
+            // C. Validate PER-USER Limits (Daily Sales, etc.)
             const limitCheck = await this.checkLimits(userId, tickets, totalBatchCost);
             if (!limitCheck.allowed) {
                 return { error: { message: limitCheck.reason } };

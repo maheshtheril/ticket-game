@@ -244,6 +244,12 @@ export default function AdminPanel({ agent, onBack, onNavigate, setEditingUser, 
                 >
                     <Text style={{ textAlign: 'center', fontWeight: 'bold', color: adminTab === 'globalLimits' ? '#607D8B' : '#888' }}>Limits</Text>
                 </TouchableOpacity>
+                <TouchableOpacity
+                    style={{ flex: 1, padding: 15, borderBottomWidth: adminTab === 'exposure' ? 3 : 0, borderBottomColor: '#607D8B' }}
+                    onPress={() => setAdminTab('exposure')}
+                >
+                    <Text style={{ textAlign: 'center', fontWeight: 'bold', color: adminTab === 'exposure' ? '#607D8B' : '#888' }}>Exposure</Text>
+                </TouchableOpacity>
             </View>
 
             <View style={{ flex: 1, padding: 15 }}>
@@ -301,7 +307,7 @@ export default function AdminPanel({ agent, onBack, onNavigate, setEditingUser, 
                             Values set on the Admin account act as the system-wide maximums.
                         </Text>
                         <TouchableOpacity
-                            style={{ backgroundColor: COLORS.primary, padding: 12, borderRadius: 8 }}
+                            style={{ backgroundColor: COLORS.primary, padding: 12, borderRadius: 8, marginBottom: 20 }}
                             onPress={() => {
                                 setEditingUser(agent); // Set Admin as editing user
                                 setActiveUserTab('limits');
@@ -310,7 +316,15 @@ export default function AdminPanel({ agent, onBack, onNavigate, setEditingUser, 
                         >
                             <Text style={{ color: '#FFF', fontWeight: 'bold' }}>Go to Admin Limits</Text>
                         </TouchableOpacity>
+
+                        <Text style={{ marginTop: 20, color: '#888', fontStyle: 'italic' }}>
+                            For Risk Management & Offload Reports, see the "Exposure" tab.
+                        </Text>
                     </View>
+                )}
+
+                {adminTab === 'exposure' && (
+                    <ExposureReport allGames={allGames} />
                 )}
             </View>
         </View>
@@ -328,3 +342,120 @@ const styles = StyleSheet.create({
         fontSize: 16
     }
 });
+
+function ExposureReport({ allGames }) {
+    const [selectedGameId, setSelectedGameId] = useState(null);
+    const [retentionLimit, setRetentionLimit] = useState('250');
+    const [report, setReport] = useState([]);
+    const [loading, setLoading] = useState(false);
+
+    const runReport = async () => {
+        if (!selectedGameId) {
+            Alert.alert("Select Game", "Please select a game first.");
+            return;
+        }
+        setLoading(true);
+        try {
+            // 1. Get Draw ID for today
+            const today = new Date().toISOString().split('T')[0];
+            let { data: draw } = await ticketService.supabase
+                .from('daily_draws').select('id').eq('schedule_id', selectedGameId).eq('draw_date', today).maybeSingle();
+
+            if (!draw) {
+                setReport([]);
+                Alert.alert("No Data", "No draw found for today.");
+                setLoading(false);
+                return;
+            }
+
+            // 2. Fetch Tickets
+            const { data: tickets } = await ticketService.supabase
+                .from('tickets')
+                .select('ticket_number, ticket_type, count')
+                .eq('draw_id', draw.id)
+                .eq('status', 'active'); // Only active risk
+
+            // 3. Aggregate
+            const counts = {};
+            tickets.forEach(t => {
+                const k = `${t.ticket_number} (${t.ticket_type})`;
+                if (!counts[k]) counts[k] = 0;
+                counts[k] += t.count;
+            });
+
+            // 4. Filter by Retention
+            const limit = parseInt(retentionLimit) || 0;
+            const result = [];
+            Object.keys(counts).forEach(k => {
+                if (counts[k] > limit) {
+                    result.push({ item: k, total: counts[k], excess: counts[k] - limit });
+                }
+            });
+
+            setReport(result.sort((a, b) => b.total - a.total)); // Sort desc
+
+        } catch (e) {
+            console.error(e);
+            Alert.alert("Error", "Failed to generate report");
+        }
+        setLoading(false);
+    };
+
+    return (
+        <ScrollView>
+            <Text style={{ fontSize: 16, fontWeight: 'bold', marginBottom: 10 }}>1. Select Game</Text>
+            <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 10, marginBottom: 20 }}>
+                {allGames.map(g => (
+                    <TouchableOpacity
+                        key={g.id}
+                        style={{ padding: 10, backgroundColor: selectedGameId === g.id ? COLORS.primary : '#EEE', borderRadius: 8 }}
+                        onPress={() => setSelectedGameId(g.id)}
+                    >
+                        <Text style={{ color: selectedGameId === g.id ? '#FFF' : '#333' }}>{g.name}</Text>
+                    </TouchableOpacity>
+                ))}
+            </View>
+
+            <Text style={{ fontSize: 16, fontWeight: 'bold', marginBottom: 5 }}>2. Retention Limit (Hold Count)</Text>
+            <Text style={{ fontSize: 12, color: '#666', marginBottom: 5 }}>Anything sold above this count will appear below.</Text>
+            <TextInput
+                style={[styles.input, { marginBottom: 20 }]}
+                value={retentionLimit}
+                onChangeText={setRetentionLimit}
+                keyboardType="numeric"
+            />
+
+            <TouchableOpacity
+                style={{ backgroundColor: '#FF9800', padding: 15, borderRadius: 8, alignItems: 'center', marginBottom: 20 }}
+                onPress={runReport}
+            >
+                <Text style={{ color: '#FFF', fontWeight: 'bold' }}>GENERATE OFFLOAD REPORT</Text>
+            </TouchableOpacity>
+
+            {loading && <Text style={{ textAlign: 'center', margin: 20 }}>Generating...</Text>}
+
+            {!loading && report.length > 0 && (
+                <View>
+                    <Text style={{ fontSize: 18, fontWeight: 'bold', marginBottom: 10, color: '#D32F2F' }}>Items to Offload ({report.length})</Text>
+                    <View style={{ backgroundColor: '#FFF', borderRadius: 8, overflow: 'hidden' }}>
+                        <View style={{ flexDirection: 'row', backgroundColor: '#EEE', padding: 10 }}>
+                            <Text style={{ flex: 2, fontWeight: 'bold' }}>Number</Text>
+                            <Text style={{ flex: 1, fontWeight: 'bold', textAlign: 'center' }}>Total</Text>
+                            <Text style={{ flex: 1, fontWeight: 'bold', textAlign: 'center', color: '#D32F2F' }}>Excess</Text>
+                        </View>
+                        {report.map((r, i) => (
+                            <View key={i} style={{ flexDirection: 'row', padding: 10, borderBottomWidth: 1, borderBottomColor: '#EEE' }}>
+                                <Text style={{ flex: 2 }}>{r.item}</Text>
+                                <Text style={{ flex: 1, textAlign: 'center' }}>{r.total}</Text>
+                                <Text style={{ flex: 1, textAlign: 'center', fontWeight: 'bold', color: '#D32F2F' }}>{r.excess}</Text>
+                            </View>
+                        ))}
+                    </View>
+                </View>
+            )}
+            {!loading && report.length === 0 && selectedGameId && (
+                <Text style={{ textAlign: 'center', color: '#666', marginTop: 20 }}>No items exceed the current retention limit.</Text>
+            )}
+        </ScrollView>
+    );
+}
