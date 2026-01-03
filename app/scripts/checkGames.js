@@ -23,7 +23,10 @@ async function check() {
     const { data: games } = await supabase.from('game_schedules').select('*');
     if (games && games.length > 0) {
         console.log(`Games found: ${games.length}`);
-        games.forEach(g => console.log(`- ${g.name} (${g.draw_time}) Active:${g.is_active}`));
+        games.forEach(g => {
+            console.log(`- ${g.name} | Active:${g.is_active}`);
+            console.log(`  Times: Open[${g.open_time}] Close[${g.close_time}] Fill[${g.fill_time}] Del[${g.deletion_time}]`);
+        });
     } else {
         console.log("NO GAMES FOUND");
     }

@@ -16,11 +16,14 @@ CREATE TABLE users (
 );
 
 -- 3. GAME SCHEDULES
-CREATE TABLE game_schedules (
     id SERIAL PRIMARY KEY,
     name VARCHAR(50) NOT NULL,
     draw_time TIME NOT NULL,
-    is_active BOOLEAN DEFAULT TRUE
+    is_active BOOLEAN DEFAULT TRUE,
+    open_time TIME,
+    close_time TIME,
+    fill_time TIME,
+    deletion_time TIME
 );
 
 -- 4. DAILY DRAWS

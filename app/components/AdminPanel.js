@@ -210,13 +210,19 @@ export default function AdminPanel({ agent, onBack, onNavigate, setEditingUser, 
                     style={{ flex: 1, padding: 15, borderBottomWidth: adminTab === 'draws' ? 3 : 0, borderBottomColor: '#607D8B' }}
                     onPress={() => setAdminTab('draws')}
                 >
-                    <Text style={{ textAlign: 'center', fontWeight: 'bold', color: adminTab === 'draws' ? '#607D8B' : '#888' }}>Draw Management</Text>
+                    <Text style={{ textAlign: 'center', fontWeight: 'bold', color: adminTab === 'draws' ? '#607D8B' : '#888' }}>Draws</Text>
+                </TouchableOpacity>
+                <TouchableOpacity
+                    style={{ flex: 1, padding: 15, borderBottomWidth: adminTab === 'times' ? 3 : 0, borderBottomColor: '#607D8B' }}
+                    onPress={() => setAdminTab('times')}
+                >
+                    <Text style={{ textAlign: 'center', fontWeight: 'bold', color: adminTab === 'times' ? '#607D8B' : '#888' }}>Time Settings</Text>
                 </TouchableOpacity>
                 <TouchableOpacity
                     style={{ flex: 1, padding: 15, borderBottomWidth: adminTab === 'globalLimits' ? 3 : 0, borderBottomColor: '#607D8B' }}
                     onPress={() => setAdminTab('globalLimits')}
                 >
-                    <Text style={{ textAlign: 'center', fontWeight: 'bold', color: adminTab === 'globalLimits' ? '#607D8B' : '#888' }}>Global Limits</Text>
+                    <Text style={{ textAlign: 'center', fontWeight: 'bold', color: adminTab === 'globalLimits' ? '#607D8B' : '#888' }}>Limits</Text>
                 </TouchableOpacity>
             </View>
 
@@ -231,10 +237,6 @@ export default function AdminPanel({ agent, onBack, onNavigate, setEditingUser, 
                                     <Text style={{ color: '#666' }}>{new Date(g.draw_time).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</Text>
                                 </View>
                                 <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-                                    <TouchableOpacity onPress={() => openTimeSettings(g)} style={{ marginRight: 15, flexDirection: 'row', alignItems: 'center', backgroundColor: '#E0F7FA', padding: 5, borderRadius: 4 }}>
-                                        <Ionicons name="timer-outline" size={24} color="#006064" />
-                                        <Text style={{ marginLeft: 5, color: '#006064', fontWeight: 'bold' }}>Time Settings</Text>
-                                    </TouchableOpacity>
                                     <Switch
                                         value={g.is_active}
                                         onValueChange={() => toggleGame(g.id, g.is_active)}
@@ -243,6 +245,31 @@ export default function AdminPanel({ agent, onBack, onNavigate, setEditingUser, 
                                     />
                                 </View>
                             </View>
+                        ))}
+                    </ScrollView>
+                )}
+
+                {adminTab === 'times' && (
+                    <ScrollView>
+                        <Text style={{ marginBottom: 15, color: '#555', fontStyle: 'italic', paddingHorizontal: 5 }}>
+                            Manage Open, Close, and Result times for each game schedule.
+                        </Text>
+                        {allGames.map(g => (
+                            <TouchableOpacity
+                                key={g.id}
+                                onPress={() => openTimeSettings(g)}
+                                style={{ backgroundColor: '#FFF', padding: 15, marginBottom: 10, borderRadius: 8, elevation: 2, borderLeftWidth: 5, borderLeftColor: '#2E7D32' }}
+                            >
+                                <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 5 }}>
+                                    <Text style={{ fontWeight: 'bold', fontSize: 18, color: '#333' }}>{g.name}</Text>
+                                    <Ionicons name="create-outline" size={24} color="#2E7D32" />
+                                </View>
+                                <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 15 }}>
+                                    <Text style={{ color: '#555' }}>Close: <Text style={{ fontWeight: 'bold' }}>{formatTimeForDisplay(g.close_time) || '--:--'}</Text></Text>
+                                    <Text style={{ color: '#555' }}>Fill: <Text style={{ fontWeight: 'bold' }}>{formatTimeForDisplay(g.fill_time) || '--:--'}</Text></Text>
+                                    <Text style={{ color: '#555' }}>Open: <Text style={{ fontWeight: 'bold' }}>{formatTimeForDisplay(g.open_time) || '--:--'}</Text></Text>
+                                </View>
+                            </TouchableOpacity>
                         ))}
                     </ScrollView>
                 )}
