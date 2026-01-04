@@ -535,21 +535,24 @@ export const ticketService = {
                 return { error: { message: limitCheck.reason } };
             }
 
+            // 5. INSERT TICKETS (Batch)
+            const { data: insertedData, error: insertError } = await supabase.from('tickets').insert(dbTickets).select('id');
+            if (insertError) throw insertError; // Throw so we catch below
 
+            // 6. Update User Balance (Deduct Cost)
+            // Ideally use RPC for atomicity: decrement_balance(user_id, amount)
+            // For now: Fetch check update
+            const { data: userBal } = await supabase.from('users').select('balance').eq('id', userId).single();
+            if (userBal) {
+                const newBal = parseFloat(userBal.balance) - totalBatchCost;
+                await supabase.from('users').update({ balance: newBal }).eq('id', userId);
+            }
 
-            // D. Insert Tickets
-            const { data: savedTickets, error: insertError } = await supabase
-                .from('tickets')
-                .insert(dbTickets)
-                .select();
+            return { data: insertedData, error: null }; // Return inserted data (ids)
 
-            if (insertError) throw insertError;
-
-            return { data: savedTickets, error: null };
-
-        } catch (err) {
-            console.error('Buy Ticket Error:', err);
-            return { data: null, error: err };
+        } catch (error) {
+            console.error("Buy Ticket Error:", error);
+            return { data: null, error: error };
         }
     },
     // 5. Declare Result (Admin)

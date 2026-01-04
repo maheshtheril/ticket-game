@@ -425,19 +425,22 @@ export default function App() {
       alert('No game selected!');
       return;
     }
-
     // Real Save
     // Pass tickets, gameId, and userId (Use selectedSubUser if set, else agent)
     const targetUserId = selectedSubUser ? selectedSubUser.id : agent.id;
     setLastError(''); // Clear previous
-    const { error } = await ticketService.buyTicket(tickets, selectedGame.id, targetUserId);
+    const { data: insertedTickets, error } = await ticketService.buyTicket(tickets, selectedGame.id, targetUserId);
 
     if (error) {
       const msg = 'Error saving: ' + (error.message || JSON.stringify(error));
       setLastError(msg);
       alert(msg);
     } else {
-      alert('Saved Successfully!');
+      // SUCCESS!
+      // Get the ID of the first ticket to show as Bill Number
+      const billNo = (insertedTickets && insertedTickets.length > 0) ? insertedTickets[0].id : 'N/A';
+
+      alert(`Saved Successfully! Bill #${billNo}`);
       setTickets([]);
       setLastError('');
     }
