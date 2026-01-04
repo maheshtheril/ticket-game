@@ -399,8 +399,12 @@ export const ticketService = {
 
             // *** GLOBAL & USER LIMIT CHECK (HIERARCHY) ***
 
-            // 1. Fetch Global Admin Limits
-            const { data: adminUser } = await supabase.from('users').select('id').eq('role', 'admin').single();
+            // 1. Fetch Limits in Parallel
+            const adminQuery = supabase.from('users').select('id').eq('role', 'admin').maybeSingle();
+            const userLimQuery = supabase.from('user_limits').select('*').eq('user_id', userId).maybeSingle();
+
+            const [{ data: adminUser }, { data: userLimits }] = await Promise.all([adminQuery, userLimQuery]);
+
             let gLimits = {
                 max_single_number_count: 1000,
                 max_double_number_count: 500,
@@ -409,35 +413,23 @@ export const ticketService = {
                 number_limit_overrides: {}
             };
             if (adminUser) {
-                const { data: lim } = await supabase.from('user_limits').select('*').eq('user_id', adminUser.id).single();
+                const { data: lim } = await supabase.from('user_limits').select('*').eq('user_id', adminUser.id).maybeSingle();
                 if (lim) gLimits = lim;
             }
 
-            // 2. Fetch Buyer User Limits (if different from Admin)
-            let userLimits = null;
-            if (userId !== adminUser?.id) {
-                const { data: uLim } = await supabase.from('user_limits').select('*').eq('user_id', userId).single();
-                userLimits = uLim;
-            }
-
-            // 3. Aggregate Cart Counts & Check
+            // 3. Aggregate Cart Counts
             const cartCounts = {};
+            const uniqueNumbers = new Set();
+            const batchBillNumber = Date.now();
+
             tickets.forEach(t => {
                 const enumType = mapTypeToEnum(t.boxType);
                 const key = `${t.number}_${enumType}`;
                 if (!cartCounts[key]) cartCounts[key] = { number: t.number, type: enumType, count: 0 };
                 cartCounts[key].count += parseInt(t.count);
-                // ... (cost logic same as before, skipping for brevity in replacement) ...
-            });
-            // Re-adding cost loop logic here since replacement replaces the loop too
-            // GENERATE BATCH BILL NUMBER (Unique ID for this entire save)
-            // We use Date.now() which is unique enough for one user (millisecond precision).
-            // This requires 'bill_number' column in 'tickets' table.
-            const batchBillNumber = Date.now();
+                uniqueNumbers.add(t.number);
 
-            tickets.forEach(t => {
-                const enumType = mapTypeToEnum(t.boxType);
-                const rate = rates[enumType] || 10.00;
+                const rate = rates[enumType] || (rates[enumType]?.buy_rate) || 10.00;
                 totalBatchCost += parseInt(t.count) * rate;
                 dbTickets.push({
                     draw_id: draw.id,
@@ -447,90 +439,62 @@ export const ticketService = {
                     count: parseInt(t.count),
                     cost_per_unit: rate,
                     status: 'active',
-                    bill_number: batchBillNumber // Saving explicit Bill Number
+                    bill_number: batchBillNumber
                 });
             });
 
+            // 4. BATCH FETCH SOLD COUNTS (Major Optimization)
+            // Instead of querying inside the loop, we query ALL sold counts for these numbers in ONE go.
+            const { data: soldTicketsData } = await supabase
+                .from('tickets')
+                .select('ticket_number, ticket_type, count')
+                .eq('draw_id', draw.id)
+                .in('ticket_number', Array.from(uniqueNumbers))
+                .eq('status', 'active');
 
-            // 4. Validate Limits
+            const soldTotals = {};
+            if (soldTicketsData) {
+                soldTicketsData.forEach(s => {
+                    const k = `${s.ticket_number}_${s.ticket_type}`;
+                    soldTotals[k] = (soldTotals[k] || 0) + s.count;
+                });
+            }
+
+            // 5. Validate Limits Locally
             for (const key of Object.keys(cartCounts)) {
                 const item = cartCounts[key];
-
-                // --- Step A: Determine Specific Limit for this Number/Type ---
-
-                // 1. Start with Global Admin Hard Cap
                 let finalLimit = 99999;
 
-                // Check Global Specific Overrides (Highest Priority for restricting)
+                // Check Global Overrides
                 const gOverrides = gLimits.number_limit_overrides || {};
                 const gNumOverride = gOverrides[item.number];
                 if (gNumOverride && gNumOverride[item.type] !== undefined) {
                     finalLimit = parseInt(gNumOverride[item.type]);
                 } else {
-                    // Default Global Category Limits (Mapped to granular types)
                     if (item.type.includes('single')) finalLimit = gLimits.max_single_number_count || 1000;
                     else if (item.type.includes('double')) finalLimit = gLimits.max_double_number_count || 500;
-                    // V2 Fix: item.type is 'triple'
                     else if (item.type === 'triple') finalLimit = gLimits.max_triple_straight_count || 50;
                     else if (item.type === 'triple_straight') finalLimit = gLimits.max_triple_straight_count || 50;
                     else if (item.type === 'triple_box') finalLimit = gLimits.max_triple_box_count || 50;
                 }
 
-                // 2. Check User-Specific Limit (if set)
-                // Rule: User Limit takes precedence over Global Category IF set, but cannot exceed Parent/Global?
-                // User said: "if user count limit is null check main. otherwise first check user count then main. other wise show separately not saved"
-                // "User count limits should not be greater than parent count limit"
-
+                // Check User Specific
                 if (userLimits) {
                     let uVal = null;
                     if (item.type.includes('single')) uVal = userLimits.max_single_number_count;
                     else if (item.type.includes('double')) uVal = userLimits.max_double_number_count;
-                    // V2 Schema Fix: item.type is now 'triple' for both Straight and Box.
-                    // We must map BOTH straight/box limits to this 'triple' check.
-                    // For safety, we use the stricter (smaller) of the two if we can't distinguish?
-                    // OR we just use straight limit for now as it's typically stricter.
                     else if (item.type === 'triple') uVal = userLimits.max_triple_straight_count || userLimits.max_triple_box_count;
-                    // Fallback for old code
                     else if (item.type === 'triple_straight') uVal = userLimits.max_triple_straight_count;
                     else if (item.type === 'triple_box') uVal = userLimits.max_triple_box_count;
 
-                    // If user has a limit defined
                     if (uVal !== null && uVal !== undefined) {
-                        // Crucial Rule: User Limit cannot exceed Global Limit
-                        // If User Limit > Global Limit -> Use Global
-                        // If User Limit < Global Limit -> Use User Limit
                         finalLimit = Math.min(finalLimit, parseInt(uVal));
                     }
                 }
 
-                // --- Step B: Check Usage ---
-
-                // Get Total Global Sales (All users)
-                const { count: globalSold, error: gErr } = await supabase
-                    .from('tickets')
-                    .select('count', { count: 'exact', head: false }) // Just count rows? No, need sum.
-                    // Supabase Count is rows. We need SUM(count).
-                    // Simple select and sum in JS is easier for now unless RPC.
-                    .eq('draw_id', draw.id)
-                    .eq('ticket_number', item.number)
-                    .eq('ticket_type', item.type)
-                    .eq('status', 'active');
-
-                // Fix: Supabase .count() is distinct rows. We need sum of 'count' column.
-                // Fetching simple list
-                const { data: soldTickets } = await supabase
-                    .from('tickets')
-                    .select('count')
-                    .eq('draw_id', draw.id)
-                    .eq('ticket_number', item.number)
-                    .eq('ticket_type', item.type)
-                    .eq('status', 'active');
-
-                const currentTotal = soldTickets ? soldTickets.reduce((sum, t) => sum + t.count, 0) : 0;
-
-                // Validate
+                const currentTotal = soldTotals[key] || 0;
                 if ((currentTotal + item.count) > finalLimit) {
-                    return { error: `Limit exceeded for ${item.number} (${item.type}). Max: ${finalLimit}, Sold: ${currentTotal}. Remaining: ${finalLimit - currentTotal}` };
+                    return { error: { message: `Limit exceeded for ${item.number} (${item.type}). Max: ${finalLimit}, Sold: ${currentTotal}. Remaining: ${finalLimit - currentTotal}` } };
                 }
             }
             // *** GLOBAL LIMIT CHECK END ***

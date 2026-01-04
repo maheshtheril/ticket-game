@@ -11,7 +11,8 @@ import {
   TextInput,
   Animated,
   Switch,
-  ScrollView
+  ScrollView,
+  ActivityIndicator
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 
@@ -97,6 +98,7 @@ export default function App() {
   const [editIsActive, setEditIsActive] = useState(true);
   const [editBlockedNumbers, setEditBlockedNumbers] = useState(''); // Comma separated
   const [lastError, setLastError] = useState(''); // For debugging/displaying server errors
+  const [isLoading, setIsLoading] = useState(false);
 
   // Load Games (Real)
 
@@ -429,25 +431,26 @@ export default function App() {
     // Pass tickets, gameId, and userId (Use selectedSubUser if set, else agent)
     const targetUserId = selectedSubUser ? selectedSubUser.id : agent.id;
     setLastError(''); // Clear previous
-    const { data: insertedTickets, error } = await ticketService.buyTicket(tickets, selectedGame.id, targetUserId);
+    setIsLoading(true); // START LOADING
 
-    if (error) {
-      const msg = 'Error saving: ' + (error.message || JSON.stringify(error));
-      setLastError(msg);
-      alert(msg);
-    } else {
-      // SUCCESS!
-      // Display the Bill Number we just saved.
-      // If the DB returned it (which it might not if we didn't select it, but we know what we sent: the one derived from Date.now() effectively, 
-      // but 'insertedTickets' has the real data if we select *).
-      // The current buyTicket returns 'insertedData' which was .select('id'). 
-      // Let's rely on the first ID logic for continuity OR if we saved bill_number, we should ideally return IT.
-      // But for UI stability right now:
-      const billNo = (insertedTickets && insertedTickets.length > 0) ? (insertedTickets[0].bill_number || insertedTickets[0].id) : 'N/A';
+    try {
+      const { data: insertedTickets, error } = await ticketService.buyTicket(tickets, selectedGame.id, targetUserId);
 
-      alert(`Saved Successfully! Bill #${billNo}`);
-      setTickets([]);
-      setLastError('');
+      if (error) {
+        const msg = 'Error saving: ' + (error.message || JSON.stringify(error));
+        setLastError(msg);
+        alert(msg);
+      } else {
+        // SUCCESS!
+        // Display the Bill Number we just saved.
+        const billNo = (insertedTickets && insertedTickets.length > 0) ? (insertedTickets[0].bill_number || insertedTickets[0].id) : 'N/A';
+
+        alert(`Saved Successfully! Bill #${billNo}`);
+        setTickets([]);
+        setLastError('');
+      }
+    } finally {
+      setIsLoading(false); // STOP LOADING
     }
   };
 
@@ -1396,7 +1399,7 @@ export default function App() {
         <Ionicons name="close" size={30} color="#FFF" />
       </TouchableOpacity>
       <View style={{ position: 'absolute', bottom: 10, left: 20 }}>
-        <Text style={{ color: '#CCC', fontSize: 12 }}>v1.5 (Schema V2 Fix)</Text>
+        <Text style={{ color: '#CCC', fontSize: 12 }}>v1.6 (Speed + UX Fixed)</Text>
       </View>
     </Animated.View>
   );
@@ -1693,6 +1696,21 @@ export default function App() {
         />
       )}
       {renderSideMenu()}
+
+      {/* Loading Overlay */}
+      {isLoading && (
+        <View style={{
+          position: 'absolute', top: 0, left: 0, right: 0, bottom: 0,
+          backgroundColor: 'rgba(0,0,0,0.6)', justifyContent: 'center', alignItems: 'center',
+          zIndex: 9999
+        }}>
+          <View style={{ backgroundColor: '#FFF', padding: 30, borderRadius: 15, alignItems: 'center', elevation: 10 }}>
+            <ActivityIndicator size="large" color={COLORS.primary} />
+            <Text style={{ marginTop: 15, fontWeight: 'bold', fontSize: 16 }}>Processing Tickets...</Text>
+            <Text style={{ marginTop: 5, color: '#666' }}>Please wait, validating limits</Text>
+          </View>
+        </View>
+      )}
 
       {currentView === 'results' && (
         <View style={styles.formContainer}>
