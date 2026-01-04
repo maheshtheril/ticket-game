@@ -6,8 +6,8 @@ import { ticketService } from '../services/ticketService';
 import { COLORS } from '../constants/theme';
 import GlobalLimitsSettings from './GlobalLimitsSettings';
 
-export default function AdminPanel({ agent, onBack, onNavigate, setEditingUser, setActiveUserTab }) {
-    const [adminTab, setAdminTab] = useState('draws');
+export default function AdminPanel({ agent, onBack, onNavigate, setEditingUser, setActiveUserTab, initialTab = 'draws' }) {
+    const [adminTab, setAdminTab] = useState(initialTab);
     const [allGames, setAllGames] = useState([]);
 
     // Time Settings State
@@ -233,18 +233,24 @@ export default function AdminPanel({ agent, onBack, onNavigate, setEditingUser, 
                 >
                     <Text style={{ textAlign: 'center', fontWeight: 'bold', color: adminTab === 'draws' ? '#607D8B' : '#888' }}>Draws</Text>
                 </TouchableOpacity>
-                <TouchableOpacity
-                    style={{ flex: 1, padding: 15, borderBottomWidth: adminTab === 'times' ? 3 : 0, borderBottomColor: '#607D8B' }}
-                    onPress={() => setAdminTab('times')}
-                >
-                    <Text style={{ textAlign: 'center', fontWeight: 'bold', color: adminTab === 'times' ? '#607D8B' : '#888' }}>Time Settings</Text>
-                </TouchableOpacity>
-                <TouchableOpacity
-                    style={{ flex: 1, padding: 15, borderBottomWidth: adminTab === 'globalLimits' ? 3 : 0, borderBottomColor: '#607D8B' }}
-                    onPress={() => setAdminTab('globalLimits')}
-                >
-                    <Text style={{ textAlign: 'center', fontWeight: 'bold', color: adminTab === 'globalLimits' ? '#607D8B' : '#888' }}>Limits</Text>
-                </TouchableOpacity>
+
+                {(agent.role === 'admin' || agent.username === 'admin') && (
+                    <>
+                        <TouchableOpacity
+                            style={{ flex: 1, padding: 15, borderBottomWidth: adminTab === 'times' ? 3 : 0, borderBottomColor: '#607D8B' }}
+                            onPress={() => setAdminTab('times')}
+                        >
+                            <Text style={{ textAlign: 'center', fontWeight: 'bold', color: adminTab === 'times' ? '#607D8B' : '#888' }}>Time Settings</Text>
+                        </TouchableOpacity>
+                        <TouchableOpacity
+                            style={{ flex: 1, padding: 15, borderBottomWidth: adminTab === 'globalLimits' ? 3 : 0, borderBottomColor: '#607D8B' }}
+                            onPress={() => setAdminTab('globalLimits')}
+                        >
+                            <Text style={{ textAlign: 'center', fontWeight: 'bold', color: adminTab === 'globalLimits' ? '#607D8B' : '#888' }}>Limits</Text>
+                        </TouchableOpacity>
+                    </>
+                )}
+
                 <TouchableOpacity
                     style={{ flex: 1, padding: 15, borderBottomWidth: adminTab === 'exposure' ? 3 : 0, borderBottomColor: '#607D8B' }}
                     onPress={() => setAdminTab('exposure')}

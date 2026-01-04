@@ -97,6 +97,8 @@ export default function App() {
   const [editLimits, setEditLimits] = useState({ daily: '', weekly: '', single: '' }); // Deprecated but might need cleanup
   const [editIsActive, setEditIsActive] = useState(true);
   const [editBlockedNumbers, setEditBlockedNumbers] = useState(''); // Comma separated
+  const [myLimits, setMyLimits] = useState(null);
+  const [initialAdminTab, setInitialAdminTab] = useState('draws');
   const [lastError, setLastError] = useState(''); // For debugging/displaying server errors
   const [isLoading, setIsLoading] = useState(false);
 
@@ -106,6 +108,8 @@ export default function App() {
     loadGames();
     if (agent && agent.id) {
       loadSubUsers();
+      // Fetch self limits for "My Profile"
+      ticketService.getUserLimits(agent.id).then(({ data }) => setMyLimits(data));
     }
   }, [agent]); // Reload subusers when agent changes
 
@@ -1376,11 +1380,22 @@ export default function App() {
       </TouchableOpacity>
 
       {(agent && (agent.role === 'admin' || agent.username === 'admin')) && (
-        <TouchableOpacity style={styles.menuItem} onPress={() => navigateTo('adminPanel')}>
-          <Ionicons name="settings-outline" size={24} color="#333" />
-          <Text style={styles.menuText}>Admin Panel</Text>
-        </TouchableOpacity>
+        <>
+          <TouchableOpacity style={styles.menuItem} onPress={() => { toggleMenu(); setInitialAdminTab('draws'); navigateTo('adminPanel'); }}>
+            <Ionicons name="settings-outline" size={24} color="#333" />
+            <Text style={styles.menuText}>Admin Panel</Text>
+          </TouchableOpacity>
+          <TouchableOpacity style={styles.menuItem} onPress={() => { toggleMenu(); setInitialAdminTab('globalLimits'); navigateTo('adminPanel'); }}>
+            <Ionicons name="options-outline" size={24} color="#333" />
+            <Text style={styles.menuText}>Global Limits</Text>
+          </TouchableOpacity>
+        </>
       )}
+
+      <TouchableOpacity style={styles.menuItem} onPress={() => navigateTo('myProfile')}>
+        <Ionicons name="person-outline" size={24} color="#333" />
+        <Text style={styles.menuText}>My Profile / Limits</Text>
+      </TouchableOpacity>
 
       <TouchableOpacity style={styles.menuItem} onPress={() => navigateTo('reports')}>
         <Ionicons name="document-text-outline" size={24} color="#333" />
@@ -1404,7 +1419,7 @@ export default function App() {
         <Ionicons name="close" size={30} color="#FFF" />
       </TouchableOpacity>
       <View style={{ position: 'absolute', bottom: 10, left: 20, backgroundColor: '#00C853', padding: 5 }}>
-        <Text style={{ color: '#FFF', fontSize: 14, fontWeight: 'bold' }}>VERSION 2.1 (ADMIN BAL FIXED)</Text>
+        <Text style={{ color: '#FFF', fontSize: 14, fontWeight: 'bold' }}>VERSION 2.2 (LIMITS UPDATE)</Text>
       </View>
     </Animated.View>
   );
@@ -1434,7 +1449,8 @@ export default function App() {
                 currentView === 'prizes' ? 'Prize & Comm' :
                   currentView === 'users' ? 'Customer' :
                     currentView === 'adminPanel' ? 'Admin Panel' :
-                      currentView === 'game' ? 'Ticket Sale' : 'PVC'}
+                      currentView === 'myProfile' ? 'My Profile' :
+                        currentView === 'game' ? 'Ticket Sale' : 'PVC'}
           </Text>
         </View>
         <Text style={{ fontSize: 16, fontWeight: 'bold', color: '#FFF' }}>{agent ? agent.username : ''}</Text>
@@ -1456,10 +1472,47 @@ export default function App() {
           onNavigate={setCurrentView}
           setEditingUser={setEditingUser}
           setActiveUserTab={setActiveUserTab}
+          initialTab={initialAdminTab}
         />
       )}
 
+      {currentView === 'myProfile' && (
+        <View style={{ flex: 1, backgroundColor: '#FFF', padding: 20 }}>
+          <Text style={{ fontSize: 24, fontWeight: 'bold', marginBottom: 10 }}>My Profile</Text>
+          <Text style={{ fontSize: 16, color: '#666', marginBottom: 20 }}>Role: {agent?.role}</Text>
 
+          <View style={{ backgroundColor: '#F9FAFB', padding: 20, borderRadius: 12, borderWidth: 1, borderColor: '#E5E7EB' }}>
+            <Text style={{ fontSize: 18, fontWeight: 'bold', marginBottom: 15, color: COLORS.primary }}>My Limits (View Only)</Text>
+
+            <View style={{ gap: 12 }}>
+              <View style={{ flexDirection: 'row', justifyContent: 'space-between', borderBottomWidth: 1, borderBottomColor: '#EEE', paddingBottom: 8 }}>
+                <Text style={{ color: '#4B5563', fontWeight: '500' }}>Daily Sales Limit</Text>
+                <Text style={{ fontWeight: 'bold' }}>{myLimits?.daily_sales_limit || 'No Limit'}</Text>
+              </View>
+              <View style={{ flexDirection: 'row', justifyContent: 'space-between', borderBottomWidth: 1, borderBottomColor: '#EEE', paddingBottom: 8 }}>
+                <Text style={{ color: '#4B5563', fontWeight: '500' }}>Single Number Cap</Text>
+                <Text style={{ fontWeight: 'bold' }}>{myLimits?.max_single_number_count || 1000}</Text>
+              </View>
+              <View style={{ flexDirection: 'row', justifyContent: 'space-between', borderBottomWidth: 1, borderBottomColor: '#EEE', paddingBottom: 8 }}>
+                <Text style={{ color: '#4B5563', fontWeight: '500' }}>Double Number Cap</Text>
+                <Text style={{ fontWeight: 'bold' }}>{myLimits?.max_double_number_count || 500}</Text>
+              </View>
+              <View style={{ flexDirection: 'row', justifyContent: 'space-between', borderBottomWidth: 1, borderBottomColor: '#EEE', paddingBottom: 8 }}>
+                <Text style={{ color: '#4B5563', fontWeight: '500' }}>Triple Straight Cap</Text>
+                <Text style={{ fontWeight: 'bold' }}>{myLimits?.max_triple_straight_count || 50}</Text>
+              </View>
+              <View style={{ flexDirection: 'row', justifyContent: 'space-between', borderBottomWidth: 1, borderBottomColor: '#EEE', paddingBottom: 8 }}>
+                <Text style={{ color: '#4B5563', fontWeight: '500' }}>Triple Box Cap</Text>
+                <Text style={{ fontWeight: 'bold' }}>{myLimits?.max_triple_box_count || 50}</Text>
+              </View>
+            </View>
+
+            <Text style={{ fontSize: 12, color: '#9CA3AF', marginTop: 20, fontStyle: 'italic' }}>
+              * These limits are maintained by your parent.
+            </Text>
+          </View>
+        </View>
+      )}
       {currentView === 'game' && (
         <View style={{ flex: 1 }}>
           {/* Game Stats Header (Sub-header) */}
