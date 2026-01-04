@@ -17,6 +17,7 @@ import { Ionicons } from '@expo/vector-icons';
 
 import CustomKeypad from './components/CustomKeypad';
 import AdminPanel from './components/AdminPanel';
+import ReportsView from './components/ReportsView';
 import { COLORS } from './constants/theme';
 import { ticketService } from './services/ticketService'; // Using the real service now
 
@@ -1420,8 +1421,13 @@ export default function App() {
 
       {/* Content Area */}
       {currentView === 'dashboard' && renderDashboard()}
-      {currentView === 'rates' && renderRates()}
       {currentView === 'prizes' && renderPrizes()}
+      {currentView === 'reports' && (
+        <ReportsView
+          agent={agent}
+          onBack={() => setCurrentView('dashboard')}
+        />
+      )}
       {currentView === 'adminPanel' && (
         <AdminPanel
           agent={agent}
