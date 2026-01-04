@@ -464,6 +464,8 @@ export const ticketService = {
                     // Default Global Category Limits (Mapped to granular types)
                     if (item.type.includes('single')) finalLimit = gLimits.max_single_number_count || 1000;
                     else if (item.type.includes('double')) finalLimit = gLimits.max_double_number_count || 500;
+                    // V2 Fix: item.type is 'triple'
+                    else if (item.type === 'triple') finalLimit = gLimits.max_triple_straight_count || 50;
                     else if (item.type === 'triple_straight') finalLimit = gLimits.max_triple_straight_count || 50;
                     else if (item.type === 'triple_box') finalLimit = gLimits.max_triple_box_count || 50;
                 }
@@ -477,6 +479,12 @@ export const ticketService = {
                     let uVal = null;
                     if (item.type.includes('single')) uVal = userLimits.max_single_number_count;
                     else if (item.type.includes('double')) uVal = userLimits.max_double_number_count;
+                    // V2 Schema Fix: item.type is now 'triple' for both Straight and Box.
+                    // We must map BOTH straight/box limits to this 'triple' check.
+                    // For safety, we use the stricter (smaller) of the two if we can't distinguish?
+                    // OR we just use straight limit for now as it's typically stricter.
+                    else if (item.type === 'triple') uVal = userLimits.max_triple_straight_count || userLimits.max_triple_box_count;
+                    // Fallback for old code
                     else if (item.type === 'triple_straight') uVal = userLimits.max_triple_straight_count;
                     else if (item.type === 'triple_box') uVal = userLimits.max_triple_box_count;
 
