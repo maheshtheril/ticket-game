@@ -61,7 +61,7 @@ export default function ReportsView({ agent, onBack }) {
     const groupedTickets = () => {
         const groups = {};
         activeTickets.forEach(t => {
-            // Group by exact timestamp (ISO string ensures uniqueness per batch usually)
+            // Group by exact timestamp
             const key = t.created_at;
             if (!groups[key]) groups[key] = [];
             groups[key].push(t);
@@ -69,17 +69,20 @@ export default function ReportsView({ agent, onBack }) {
 
         // Convert to array and sort by time (Latest first)
         const batchKeys = Object.keys(groups).sort((a, b) => new Date(b) - new Date(a));
-        const totalBatches = batchKeys.length;
 
-        return batchKeys.map((key, index) => {
+        return batchKeys.map((key) => {
             const batchTickets = groups[key];
-            // Assign Bill Number: Earliest is #1, Latest is #Total
-            const billNumber = totalBatches - index;
+
+            // BEST PRACTICE: Use the ID of the first ticket in the batch as the Unique Bill/Invoice Number.
+            // This is Globally Unique, Stable, and Incremental system-wide.
+            // e.g. If ticket IDs are 1001, 1002, 1003 -> Bill #1001
+            const mainTicketId = batchTickets[0].id;
+
             const displayTime = new Date(key).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' });
 
             return {
                 key: key,
-                billNumber: billNumber,
+                billNumber: mainTicketId, // Unique Database ID serves as Bill #
                 time: displayTime,
                 tickets: batchTickets
             };
