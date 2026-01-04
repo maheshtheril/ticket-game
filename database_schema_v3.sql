@@ -51,11 +51,21 @@ CREATE TABLE user_limits (
     daily_sales_limit DECIMAL(15, 2) DEFAULT 10000.00,
     weekly_sales_limit DECIMAL(15, 2) DEFAULT 70000.00,
     
-    -- Number Limits (Risk Control)
-    -- e.g. "Cannot sell more than 50 of '123' straight"
-    max_single_number_count INT DEFAULT 100, -- Limit for 1 digit
-    max_double_number_count INT DEFAULT 50,  -- Limit for 2 digits
-    max_triple_number_count INT DEFAULT 20,  -- Limit for 3 digits (straight/box)
+    -- HARD CAP LIMITS (Maximum global sales allowed per number)
+    max_single_number_count INT DEFAULT 1000, 
+    max_double_number_count INT DEFAULT 500,
+    max_triple_straight_count INT DEFAULT 50,
+    max_triple_box_count INT DEFAULT 50,
+
+    -- HOLD LIMITS (Retention threshold - excess goes to offload report)
+    hold_single_number_count INT DEFAULT 250,
+    hold_double_number_count INT DEFAULT 100,
+    hold_triple_straight_count INT DEFAULT 20,
+    hold_triple_box_count INT DEFAULT 20,
+
+    -- Specific Number Overrides (JSONB)
+    -- e.g. {"123": {"straight": 10, "box": 5}, "7": {"single": 100}}
+    number_limit_overrides JSONB DEFAULT '{}'::jsonb,
     
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );

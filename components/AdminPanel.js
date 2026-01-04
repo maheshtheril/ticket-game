@@ -345,9 +345,37 @@ const styles = StyleSheet.create({
 
 function ExposureReport({ allGames }) {
     const [selectedGameId, setSelectedGameId] = useState(null);
-    const [retentionLimit, setRetentionLimit] = useState('250');
     const [report, setReport] = useState([]);
     const [loading, setLoading] = useState(false);
+
+    // Admin Retention Settings (Read-Only reference basically, fetched from DB ideally)
+    const [retentionSettings, setRetentionSettings] = useState({
+        'single': 250,
+        'double': 100,
+        'triple_straight': 20,
+        'triple_box': 20
+    });
+
+    useEffect(() => {
+        // Fetch Admin's Hold Limits
+        const loadLimits = async () => {
+            try {
+                const { data: adminUser } = await ticketService.supabase.from('users').select('id').eq('role', 'admin').maybeSingle();
+                if (adminUser) {
+                    const { data: lim } = await ticketService.supabase.from('user_limits').select('*').eq('user_id', adminUser.id).single();
+                    if (lim) {
+                        setRetentionSettings({
+                            'single': lim.hold_single_number_count || 250,
+                            'double': lim.hold_double_number_count || 100,
+                            'triple_straight': lim.hold_triple_straight_count || 20,
+                            'triple_box': lim.hold_triple_box_count || 20
+                        });
+                    }
+                }
+            } catch (e) { console.error(e); }
+        };
+        loadLimits();
+    }, []);
 
     const runReport = async () => {
         if (!selectedGameId) {
@@ -356,7 +384,7 @@ function ExposureReport({ allGames }) {
         }
         setLoading(true);
         try {
-            // 1. Get Draw ID for today
+            // 1. Get Draw ID
             const today = new Date().toISOString().split('T')[0];
             let { data: draw } = await ticketService.supabase
                 .from('daily_draws').select('id').eq('schedule_id', selectedGameId).eq('draw_date', today).maybeSingle();
@@ -368,31 +396,36 @@ function ExposureReport({ allGames }) {
                 return;
             }
 
-            // 2. Fetch Tickets
+            // 2. Fetch Active Tickets
             const { data: tickets } = await ticketService.supabase
                 .from('tickets')
                 .select('ticket_number, ticket_type, count')
                 .eq('draw_id', draw.id)
-                .eq('status', 'active'); // Only active risk
+                .eq('status', 'active');
 
             // 3. Aggregate
-            const counts = {};
+            const counts = {}; // Key: "123_triple_straight" -> { number, type, total }
             tickets.forEach(t => {
-                const k = `${t.ticket_number} (${t.ticket_type})`;
-                if (!counts[k]) counts[k] = 0;
-                counts[k] += t.count;
+                const k = `${t.ticket_number}_${t.ticket_type}`;
+                if (!counts[k]) counts[k] = { number: t.ticket_number, type: t.ticket_type, total: 0 };
+                counts[k].total += t.count;
             });
 
-            // 4. Filter by Retention
-            const limit = parseInt(retentionLimit) || 0;
+            // 4. Compare vs Retention
             const result = [];
-            Object.keys(counts).forEach(k => {
-                if (counts[k] > limit) {
-                    result.push({ item: k, total: counts[k], excess: counts[k] - limit });
+            Object.values(counts).forEach(row => {
+                const limit = retentionSettings[row.type] || 9999;
+                if (row.total > limit) {
+                    result.push({
+                        item: `${row.number} (${row.type.replace('_', ' ').toUpperCase()})`,
+                        total: row.total,
+                        excess: row.total - limit,
+                        limitVal: limit
+                    });
                 }
             });
 
-            setReport(result.sort((a, b) => b.total - a.total)); // Sort desc
+            setReport(result.sort((a, b) => b.excess - a.excess));
 
         } catch (e) {
             console.error(e);
@@ -416,14 +449,16 @@ function ExposureReport({ allGames }) {
                 ))}
             </View>
 
-            <Text style={{ fontSize: 16, fontWeight: 'bold', marginBottom: 5 }}>2. Retention Limit (Hold Count)</Text>
-            <Text style={{ fontSize: 12, color: '#666', marginBottom: 5 }}>Anything sold above this count will appear below.</Text>
-            <TextInput
-                style={[styles.input, { marginBottom: 20 }]}
-                value={retentionLimit}
-                onChangeText={setRetentionLimit}
-                keyboardType="numeric"
-            />
+            <View style={{ backgroundColor: '#E3F2FD', padding: 15, borderRadius: 8, marginBottom: 20 }}>
+                <Text style={{ fontWeight: 'bold', color: '#1565C0', marginBottom: 5 }}>Current Retention Limits (Hold)</Text>
+                <Text style={{ fontSize: 12, color: '#555' }}>To change these, go to "Limits" tab and edit Admin Profile.</Text>
+                <View style={{ flexDirection: 'row', flexWrap: 'wrap', marginTop: 10 }}>
+                    <Text style={{ width: '50%', fontSize: 13 }}>Single: <Text style={{ fontWeight: 'bold' }}>{retentionSettings.single}</Text></Text>
+                    <Text style={{ width: '50%', fontSize: 13 }}>Double: <Text style={{ fontWeight: 'bold' }}>{retentionSettings.double}</Text></Text>
+                    <Text style={{ width: '50%', fontSize: 13 }}>3-Straight: <Text style={{ fontWeight: 'bold' }}>{retentionSettings.triple_straight}</Text></Text>
+                    <Text style={{ width: '50%', fontSize: 13 }}>3-Box: <Text style={{ fontWeight: 'bold' }}>{retentionSettings.triple_box}</Text></Text>
+                </View>
+            </View>
 
             <TouchableOpacity
                 style={{ backgroundColor: '#FF9800', padding: 15, borderRadius: 8, alignItems: 'center', marginBottom: 20 }}
@@ -439,13 +474,13 @@ function ExposureReport({ allGames }) {
                     <Text style={{ fontSize: 18, fontWeight: 'bold', marginBottom: 10, color: '#D32F2F' }}>Items to Offload ({report.length})</Text>
                     <View style={{ backgroundColor: '#FFF', borderRadius: 8, overflow: 'hidden' }}>
                         <View style={{ flexDirection: 'row', backgroundColor: '#EEE', padding: 10 }}>
-                            <Text style={{ flex: 2, fontWeight: 'bold' }}>Number</Text>
+                            <Text style={{ flex: 3, fontWeight: 'bold' }}>Number (Type)</Text>
                             <Text style={{ flex: 1, fontWeight: 'bold', textAlign: 'center' }}>Total</Text>
                             <Text style={{ flex: 1, fontWeight: 'bold', textAlign: 'center', color: '#D32F2F' }}>Excess</Text>
                         </View>
                         {report.map((r, i) => (
                             <View key={i} style={{ flexDirection: 'row', padding: 10, borderBottomWidth: 1, borderBottomColor: '#EEE' }}>
-                                <Text style={{ flex: 2 }}>{r.item}</Text>
+                                <Text style={{ flex: 3, fontSize: 13 }}>{r.item}</Text>
                                 <Text style={{ flex: 1, textAlign: 'center' }}>{r.total}</Text>
                                 <Text style={{ flex: 1, textAlign: 'center', fontWeight: 'bold', color: '#D32F2F' }}>{r.excess}</Text>
                             </View>
@@ -454,7 +489,7 @@ function ExposureReport({ allGames }) {
                 </View>
             )}
             {!loading && report.length === 0 && selectedGameId && (
-                <Text style={{ textAlign: 'center', color: '#666', marginTop: 20 }}>No items exceed the current retention limit.</Text>
+                <Text style={{ textAlign: 'center', color: '#666', marginTop: 20 }}>All sales are within retention limits.</Text>
             )}
         </ScrollView>
     );

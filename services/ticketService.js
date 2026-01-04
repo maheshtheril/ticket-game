@@ -397,26 +397,30 @@ export const ticketService = {
                 draw = newDraw;
             }
 
-            // *** GLOBAL LIMIT CHECK START ***
-            // 1. Fetch Admin User (Assume ID 1 or Role 'admin') to get Global Limits
-            // Optimization: Cache this or fetch once
+            // *** GLOBAL LIMIT CHECK START (REFINED) ***
+            // 1. Fetch Admin User to get Global Limits (Hard & Hold limits)
             const { data: adminUser } = await supabase.from('users').select('id').eq('role', 'admin').single();
-            let globalLimits = { max_single_number_count: 1000, max_triple_number_count: 50 }; // Defaults
+            let gLimits = {
+                max_single_number_count: 1000,
+                max_double_number_count: 500,
+                max_triple_straight_count: 50, // Default Hard Limit
+                max_triple_box_count: 50,
+                number_limit_overrides: {}
+            };
 
             if (adminUser) {
                 const { data: lim } = await supabase.from('user_limits').select('*').eq('user_id', adminUser.id).single();
-                if (lim) globalLimits = lim;
+                if (lim) gLimits = lim;
             }
 
-            // 2. Aggregate Cart Counts by Type/Number
-            const cartCounts = {}; // { '123_triple_straight': 10 }
+            // 2. Aggregate Cart Counts
+            const cartCounts = {};
             tickets.forEach(t => {
                 const enumType = mapTypeToEnum(t.boxType);
                 const key = `${t.number}_${enumType}`;
                 if (!cartCounts[key]) cartCounts[key] = { number: t.number, type: enumType, count: 0 };
                 cartCounts[key].count += parseInt(t.count);
 
-                // Prepare DB Object
                 const rate = rates[enumType] || 10.00;
                 totalBatchCost += parseInt(t.count) * rate;
                 dbTickets.push({
@@ -430,19 +434,30 @@ export const ticketService = {
                 });
             });
 
-            // 3. Check DB vs Global Limits
-            // Note: This loop queries DB for each unique number in cart. 
-            // For production, this should be a single RPC or batch query.
+            // 3. Check Against Limits
             for (const key of Object.keys(cartCounts)) {
                 const item = cartCounts[key];
 
-                // Determine Limit
-                let maxLimit = 10000;
-                if (item.type === 'single') maxLimit = globalLimits.max_single_number_count || 1000;
-                else if (item.type.includes('triple')) maxLimit = globalLimits.max_triple_number_count || 50; // Use triple limit
-                // Add specific number overrides here if `user_limits` supported it
+                // A. Determine Hard Limit (Max Global Sales)
+                let maxLimit = 10000; // Fallback
 
-                // Fetch Current Global Count
+                // Specific Number Override? (e.g. {"123": {"straight": 10}})
+                // Logic: check number_limit_overrides -> number -> type
+                // gLimits.number_limit_overrides might be null, check safely
+                const overrides = gLimits.number_limit_overrides || {};
+                const numOverride = overrides[item.number];
+
+                if (numOverride && numOverride[item.type] !== undefined) {
+                    maxLimit = parseInt(numOverride[item.type]);
+                } else {
+                    // Default Category Limits
+                    if (item.type === 'single') maxLimit = gLimits.max_single_number_count || 1000;
+                    else if (item.type === 'double') maxLimit = gLimits.max_double_number_count || 500;
+                    else if (item.type === 'triple_straight') maxLimit = gLimits.max_triple_straight_count || 50;
+                    else if (item.type === 'triple_box') maxLimit = gLimits.max_triple_box_count || 50;
+                }
+
+                // B. Fetch Current Global Count
                 const { data: usageData, error: usageError } = await supabase
                     .from('tickets')
                     .select('count')
@@ -456,7 +471,7 @@ export const ticketService = {
                 const currentGlobalTotal = usageData ? usageData.reduce((sum, row) => sum + row.count, 0) : 0;
 
                 if (currentGlobalTotal + item.count > maxLimit) {
-                    return { error: { message: `Global Limit Exceeded for ${item.number}. Limit: ${maxLimit}, Available: ${maxLimit - currentGlobalTotal}` } };
+                    return { error: { message: `Global Limit Exceeded for ${item.number} (${item.type}). Limit: ${maxLimit}, Available: ${Math.max(0, maxLimit - currentGlobalTotal)}` } };
                 }
             }
             // *** GLOBAL LIMIT CHECK END ***
