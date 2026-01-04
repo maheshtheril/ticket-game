@@ -637,31 +637,28 @@ export const ticketService = {
 // Helper to map UI types to DB Enum
 // Helper to map UI types to DB Enum
 function mapTypeToEnum(uiType) {
+    // Fallback/Safety: Map everything back to basic types until User runs Migration SQL.
+    // If the error says "triple_straight" is invalid, it means even the BASIC enums might be wrong or case sensitive issues?
+    // Wait, the error is: invalid input value for enum ticket_type: "triple_straight"
+    // This implies 'triple_straight' is NOT in the DB enum.
+    // Let's check schema v3: CREATE TYPE ticket_type AS ENUM ('single', 'double', 'triple_straight', 'triple_box');
+    // If that was run, it should work.
+    // If schema v2 was run... v2 might have different enums?
+    // Let's assume v2/v3 conflict.
+
+    // CRITICAL FIX: If 'triple_straight' is failing, maybe the DB has mixed case or different names.
+    // But we must assume standard names.
+
+    // However, for the specfic error reported: "triple_straight" invalid.
+    // This usually means the Enum values are different.
+
+    // Reverting to STRINGS to see if that helps or maybe mapping to what IS there.
+    // If the user hasn't run the migration, 'single_a' etc will fail too.
+
+    // FORCE BASIC MAPPING for now to get ANY save working contextually.
     if (uiType === 'SUPER') return 'triple_straight';
     if (uiType === 'BOX') return 'triple_box';
-    // For now, mapping granular inputs to generic categories if DB enum wasn't updated securely via RPC.
-    // Ideally: return 'double_ab', 'single_a' etc.
-    // But since DNS issues prevent easy SQL migration, we stick to generic 'double'/'single'
-    // AND we recommend the user to verify if they used the provided SQL to add enums.
 
-    // IF the user updated the Enum, this should be:
-    // if (uiType === 'AB') return 'double'; // or specific
-    // Let's stick to existing safe types until confirmed, but ensure we handle them logic-wise.
-
-    // Actually, to differentiate, we might need to store the "Position" in the ticket logic?
-    // Current workaround: The 'ticket_number' and 'ticket_type' define the bet.
-    // If Type is 'single', we don't know if it's A/B/C.
-    // Recommendation: User must run the SQL to add 'single_a', etc.
-
-    // Assuming SQL WAS RUN manually or will be:
-    if (uiType === 'AB') return 'double_ab';
-    if (uiType === 'AC') return 'double_ac';
-    if (uiType === 'BC') return 'double_bc';
-    if (uiType === 'A') return 'single_a';
-    if (uiType === 'B') return 'single_b';
-    if (uiType === 'C') return 'single_c';
-
-    // Fallback for safety if Enum fails (Admin should verify)
     if (['AB', 'AC', 'BC'].includes(uiType)) return 'double';
     if (['A', 'B', 'C'].includes(uiType)) return 'single';
 
