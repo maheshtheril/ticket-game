@@ -61,24 +61,43 @@ export default function ReportsView({ agent, onBack }) {
     const groupedTickets = () => {
         const groups = {};
         activeTickets.forEach(t => {
-            // Create a key based on timestamp (down to minute or second?)
-            // Usually batch save has identical created_at.
-            const timeKey = new Date(t.created_at).toLocaleTimeString(); // Group by HH:MM:SS
-            if (!groups[timeKey]) groups[timeKey] = [];
-            groups[timeKey].push(t);
+            // Group by exact timestamp (ISO string ensures uniqueness per batch usually)
+            const key = t.created_at;
+            if (!groups[key]) groups[key] = [];
+            groups[key].push(t);
         });
-        return Object.entries(groups); // [['10:00:01 AM', [t1, t2]], ...]
+
+        // Convert to array and sort by time (Latest first)
+        const batchKeys = Object.keys(groups).sort((a, b) => new Date(b) - new Date(a));
+        const totalBatches = batchKeys.length;
+
+        return batchKeys.map((key, index) => {
+            const batchTickets = groups[key];
+            // Assign Bill Number: Earliest is #1, Latest is #Total
+            const billNumber = totalBatches - index;
+            const displayTime = new Date(key).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+
+            return {
+                key: key,
+                billNumber: billNumber,
+                time: displayTime,
+                tickets: batchTickets
+            };
+        });
     };
 
     const renderBatch = ({ item }) => {
-        const [time, tickets] = item;
+        const { billNumber, time, tickets } = item;
         const totalAmount = tickets.reduce((sum, t) => sum + (t.count * t.cost_per_unit), 0);
 
         return (
             <View style={styles.batchCard}>
                 <View style={styles.batchHeader}>
-                    <Text style={{ fontWeight: 'bold' }}>Time: {time}</Text>
-                    <Text style={{ fontWeight: 'bold', color: COLORS.primary }}>Total: {totalAmount}</Text>
+                    <Text style={{ fontWeight: 'bold', fontSize: 16 }}>Bill #{billNumber}</Text>
+                    <Text style={{ fontSize: 12, color: '#666' }}>{time}</Text>
+                </View>
+                <View style={{ marginBottom: 5 }}>
+                    <Text style={{ fontWeight: 'bold', color: COLORS.primary, textAlign: 'right' }}>Total: ₹{totalAmount}</Text>
                 </View>
                 {tickets.map(t => (
                     <View key={t.id} style={styles.ticketRow}>
