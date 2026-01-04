@@ -647,15 +647,20 @@ export default function App() {
       const limits = {
         daily_sales_limit: parseFloat(userForm.dailyLimit) || null,
         weekly_sales_limit: parseFloat(userForm.weeklyLimit) || null,
+        // Detailed Hard Cap
         max_single_number_count: parseInt(userForm.singleLimit) || null,
-        // Blocked numbers removed for this flow as requested, or keep optional
-        // special_number_limits logic
-        special_number_limits: userForm.specialLimits || {}, // { "123": 50, "5": 200 }
-        type_limits: {
-          double: parseInt(userForm.doubleLimit) || null,
-          super: parseInt(userForm.superLimit) || null,
-          box: parseInt(userForm.boxLimit) || null
-        }
+        max_double_number_count: parseInt(userForm.doubleLimit) || null,
+        max_triple_straight_count: parseInt(userForm.tripleStraightLimit) || null,
+        max_triple_box_count: parseInt(userForm.tripleBoxLimit) || null,
+
+        // Detailed Hold (Retention)
+        hold_single_number_count: parseInt(userForm.holdSingle) || null,
+        hold_double_number_count: parseInt(userForm.holdDouble) || null,
+        hold_triple_straight_count: parseInt(userForm.holdTripleStraight) || null,
+        hold_triple_box_count: parseInt(userForm.holdTripleBox) || null,
+
+        special_number_limits: userForm.specialLimits || {}
+        // Deprecated 'type_limits' logic removed in favor of explicit columns
       };
       await ticketService.updateUserLimits(editingUser.id, limits);
 
@@ -864,12 +869,32 @@ export default function App() {
                   <TextInput style={styles.inputField} value={userForm.doubleLimit} onChangeText={t => updateForm('doubleLimit', t)} keyboardType="numeric" />
                 </View>
                 <View style={{ width: '48%' }}>
-                  <Text style={styles.inputLabel}>Lsk Super</Text>
-                  <TextInput style={styles.inputField} value={userForm.superLimit} onChangeText={t => updateForm('superLimit', t)} keyboardType="numeric" />
+                  <Text style={styles.inputLabel}>Triple Straight</Text>
+                  <TextInput style={styles.inputField} value={userForm.tripleStraightLimit} onChangeText={t => updateForm('tripleStraightLimit', t)} keyboardType="numeric" />
                 </View>
                 <View style={{ width: '48%' }}>
-                  <Text style={styles.inputLabel}>Box</Text>
-                  <TextInput style={styles.inputField} value={userForm.boxLimit} onChangeText={t => updateForm('boxLimit', t)} keyboardType="numeric" />
+                  <Text style={styles.inputLabel}>Triple Box</Text>
+                  <TextInput style={styles.inputField} value={userForm.tripleBoxLimit} onChangeText={t => updateForm('tripleBoxLimit', t)} keyboardType="numeric" />
+                </View>
+              </View>
+
+              <Text style={{ fontWeight: 'bold', marginVertical: 10, fontSize: 16 }}>Retention/Hold Settings (Admin Only)</Text>
+              <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 10, backgroundColor: '#E0F7FA', padding: 10, borderRadius: 5 }}>
+                <View style={{ width: '48%' }}>
+                  <Text style={styles.inputLabel}>Hold Single</Text>
+                  <TextInput style={styles.inputField} value={userForm.holdSingle} onChangeText={t => updateForm('holdSingle', t)} keyboardType="numeric" />
+                </View>
+                <View style={{ width: '48%' }}>
+                  <Text style={styles.inputLabel}>Hold Double</Text>
+                  <TextInput style={styles.inputField} value={userForm.holdDouble} onChangeText={t => updateForm('holdDouble', t)} keyboardType="numeric" />
+                </View>
+                <View style={{ width: '48%' }}>
+                  <Text style={styles.inputLabel}>Hold 3-Str</Text>
+                  <TextInput style={styles.inputField} value={userForm.holdTripleStraight} onChangeText={t => updateForm('holdTripleStraight', t)} keyboardType="numeric" />
+                </View>
+                <View style={{ width: '48%' }}>
+                  <Text style={styles.inputLabel}>Hold 3-Box</Text>
+                  <TextInput style={styles.inputField} value={userForm.holdTripleBox} onChangeText={t => updateForm('holdTripleBox', t)} keyboardType="numeric" />
                 </View>
               </View>
 
@@ -1010,7 +1035,8 @@ export default function App() {
       setUserForm({
         username: '', password: '', balance: '',
         dailyLimit: '', weeklyLimit: '',
-        singleLimit: '', doubleLimit: '', superLimit: '', boxLimit: '',
+        singleLimit: '', doubleLimit: '', tripleStraightLimit: '', tripleBoxLimit: '',
+        holdSingle: '', holdDouble: '', holdTripleStraight: '', holdTripleBox: '',
         blockedNumbers: '',
         rates: {}, // Start empty, will default to My Rates in UI
         isActive: true
@@ -1033,9 +1059,15 @@ export default function App() {
         dailyLimit: limits?.daily_sales_limit ? limits.daily_sales_limit.toString() : '',
         weeklyLimit: limits?.weekly_sales_limit ? limits.weekly_sales_limit.toString() : '',
         singleLimit: limits?.max_single_number_count ? limits.max_single_number_count.toString() : '',
-        doubleLimit: limits?.type_limits?.double ? limits.type_limits.double.toString() : '',
-        superLimit: limits?.type_limits?.super ? limits.type_limits.super.toString() : '',
-        boxLimit: limits?.type_limits?.box ? limits.type_limits.box.toString() : '',
+        doubleLimit: limits?.max_double_number_count ? limits.max_double_number_count.toString() : '',
+        tripleStraightLimit: limits?.max_triple_straight_count ? limits.max_triple_straight_count.toString() : '',
+        tripleBoxLimit: limits?.max_triple_box_count ? limits.max_triple_box_count.toString() : '',
+
+        holdSingle: limits?.hold_single_number_count ? limits.hold_single_number_count.toString() : '',
+        holdDouble: limits?.hold_double_number_count ? limits.hold_double_number_count.toString() : '',
+        holdTripleStraight: limits?.hold_triple_straight_count ? limits.hold_triple_straight_count.toString() : '',
+        holdTripleBox: limits?.hold_triple_box_count ? limits.hold_triple_box_count.toString() : '',
+
         blockedNumbers: limits?.blocked_numbers || '',
         rates: (() => {
           const mapped = {};
