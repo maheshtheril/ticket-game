@@ -4,6 +4,7 @@ import { View, Text, TouchableOpacity, ScrollView, Switch, TextInput, Alert, Sty
 import { Ionicons } from '@expo/vector-icons';
 import { ticketService } from '../services/ticketService';
 import { COLORS } from '../constants/theme';
+import GlobalLimitsSettings from './GlobalLimitsSettings';
 
 export default function AdminPanel({ agent, onBack, onNavigate, setEditingUser, setActiveUserTab }) {
     const [adminTab, setAdminTab] = useState('draws');
@@ -301,26 +302,7 @@ export default function AdminPanel({ agent, onBack, onNavigate, setEditingUser, 
                 )}
 
                 {adminTab === 'globalLimits' && (
-                    <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
-                        <Text style={{ fontSize: 16, color: '#555', textAlign: 'center', marginBottom: 20 }}>
-                            To manage Global Limits, please edit your own profile limits in the 'Manage Users' section.
-                            Values set on the Admin account act as the system-wide maximums.
-                        </Text>
-                        <TouchableOpacity
-                            style={{ backgroundColor: COLORS.primary, padding: 12, borderRadius: 8, marginBottom: 20 }}
-                            onPress={() => {
-                                setEditingUser(agent); // Set Admin as editing user
-                                setActiveUserTab('limits');
-                                onNavigate('users'); // Redirect to user edit view
-                            }}
-                        >
-                            <Text style={{ color: '#FFF', fontWeight: 'bold' }}>Go to Admin Limits</Text>
-                        </TouchableOpacity>
-
-                        <Text style={{ marginTop: 20, color: '#888', fontStyle: 'italic' }}>
-                            For Risk Management & Offload Reports, see the "Exposure" tab.
-                        </Text>
-                    </View>
+                    <GlobalLimitsSettings />
                 )}
 
                 {adminTab === 'exposure' && (
