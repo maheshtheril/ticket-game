@@ -583,26 +583,31 @@ export default function App() {
 
 
     <View style={styles.formContainer}>
-      <View style={{ backgroundColor: 'yellow', padding: 5, marginBottom: 5 }}>
-        <Text style={{ color: 'red', fontWeight: 'bold', textAlign: 'center' }}>
-          DEBUG: User=[{agent?.username}] Role=[{agent?.role}] MatchesAdmin?={(agent?.role === 'admin' || agent?.username === 'admin').toString()}
-        </Text>
-      </View>
-      <View style={{ gap: 15, padding: 10 }}>
+      <View style={{ gap: 10, padding: 10 }}>
 
-        {/* ADMIN PANEL - FORCED SHOW */}
-        <TouchableOpacity
-          style={[styles.dashboardBtnBlue, { backgroundColor: '#D32F2F', borderWidth: 2, borderColor: '#B71C1C' }]}
-          onPress={() => setCurrentView('adminPanel')}
-        >
-          <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'center' }}>
-            <Ionicons name="settings" size={32} color="#FFF" style={{ marginRight: 15 }} />
-            <View>
-              <Text style={{ color: '#FFF', fontWeight: 'bold', fontSize: 20 }}>ADMIN PANEL</Text>
-              <Text style={{ color: '#FFCDD2', fontSize: 14 }}>Manage Times & Games</Text>
-            </View>
-          </View>
-        </TouchableOpacity>
+        {(agent?.role === 'admin' || agent?.username === 'admin') && (
+          <>
+            <TouchableOpacity
+              style={[styles.dashboardBtnBlue, { backgroundColor: '#D32F2F' }]}
+              onPress={() => { setInitialAdminTab('draws'); setCurrentView('adminPanel'); }}
+            >
+              <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                <Ionicons name="settings" size={28} color="#FFF" style={{ marginRight: 15 }} />
+                <Text style={styles.dashboardBtnText}>Admin Panel</Text>
+              </View>
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              style={[styles.dashboardBtnBlue, { backgroundColor: '#E65100' }]}
+              onPress={() => { setInitialAdminTab('globalLimits'); setCurrentView('adminPanel'); }}
+            >
+              <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                <Ionicons name="options" size={28} color="#FFF" style={{ marginRight: 15 }} />
+                <Text style={styles.dashboardBtnText}>Global Limits</Text>
+              </View>
+            </TouchableOpacity>
+          </>
+        )}
 
         <TouchableOpacity
           style={styles.dashboardBtnBlue}
@@ -630,7 +635,17 @@ export default function App() {
         >
           <View style={{ flexDirection: 'row', alignItems: 'center' }}>
             <Ionicons name="grid-outline" size={28} color="#FFF" style={{ marginRight: 15 }} />
-            <Text style={styles.dashboardBtnText}>Manage</Text>
+            <Text style={styles.dashboardBtnText}>Manage Customers</Text>
+          </View>
+        </TouchableOpacity>
+
+        <TouchableOpacity
+          style={[styles.dashboardBtnBlue, { backgroundColor: COLORS.primary }]}
+          onPress={() => setCurrentView('myProfile')}
+        >
+          <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+            <Ionicons name="person" size={28} color="#FFF" style={{ marginRight: 15 }} />
+            <Text style={styles.dashboardBtnText}>My Limits / Profile</Text>
           </View>
         </TouchableOpacity>
 
@@ -1419,7 +1434,7 @@ export default function App() {
         <Ionicons name="close" size={30} color="#FFF" />
       </TouchableOpacity>
       <View style={{ position: 'absolute', bottom: 10, left: 20, backgroundColor: '#00C853', padding: 5 }}>
-        <Text style={{ color: '#FFF', fontSize: 14, fontWeight: 'bold' }}>VERSION 2.2 (LIMITS UPDATE)</Text>
+        <Text style={{ color: '#FFF', fontSize: 14, fontWeight: 'bold' }}>VERSION 2.3 (DASHBOARD UPDATE)</Text>
       </View>
     </Animated.View>
   );
