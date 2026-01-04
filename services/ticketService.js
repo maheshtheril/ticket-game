@@ -645,8 +645,15 @@ export const ticketService = {
 // This is a current limitation of v2 schema.
 
 function mapTypeToEnum(uiType) {
+    // SECURITY HOTFIX: User reports "invalid input value for enum ticket_type: 'triple_straight'"
+
+    // Explicitly Log for the user debug console
+    console.log("Mapping UI Type:", uiType);
+
     if (uiType === 'SUPER') return 'triple';
-    if (uiType === 'BOX') return 'triple'; // Both map to 'triple' in v2
+    if (uiType === 'BOX') return 'triple';
+    if (uiType === 'triple_straight') return 'triple'; // Handle if raw backend string passed
+    if (uiType === 'triple_box') return 'triple';
 
     if (['AB', 'AC', 'BC'].includes(uiType)) return 'double';
     if (['A', 'B', 'C'].includes(uiType)) return 'single';

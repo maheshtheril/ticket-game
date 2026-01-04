@@ -1388,7 +1388,7 @@ export default function App() {
         <Ionicons name="close" size={30} color="#FFF" />
       </TouchableOpacity>
       <View style={{ position: 'absolute', bottom: 10, left: 20 }}>
-        <Text style={{ color: '#CCC', fontSize: 12 }}>v1.4</Text>
+        <Text style={{ color: '#CCC', fontSize: 12 }}>v1.5 (Schema V2 Fix)</Text>
       </View>
     </Animated.View>
   );
