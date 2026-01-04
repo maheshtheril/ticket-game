@@ -96,6 +96,7 @@ export default function App() {
   const [editLimits, setEditLimits] = useState({ daily: '', weekly: '', single: '' }); // Deprecated but might need cleanup
   const [editIsActive, setEditIsActive] = useState(true);
   const [editBlockedNumbers, setEditBlockedNumbers] = useState(''); // Comma separated
+  const [lastError, setLastError] = useState(''); // For debugging/displaying server errors
 
   // Load Games (Real)
 
@@ -428,13 +429,17 @@ export default function App() {
     // Real Save
     // Pass tickets, gameId, and userId (Use selectedSubUser if set, else agent)
     const targetUserId = selectedSubUser ? selectedSubUser.id : agent.id;
+    setLastError(''); // Clear previous
     const { error } = await ticketService.buyTicket(tickets, selectedGame.id, targetUserId);
 
     if (error) {
-      alert('Error saving: ' + (error.message || JSON.stringify(error)));
+      const msg = 'Error saving: ' + (error.message || JSON.stringify(error));
+      setLastError(msg);
+      alert(msg);
     } else {
       alert('Saved Successfully!');
       setTickets([]);
+      setLastError('');
     }
   };
 
@@ -1642,6 +1647,22 @@ export default function App() {
                 contentContainerStyle={{ paddingBottom: 10 }}
               />
             </View>
+
+            {/* Error Log Display - Added for Debugging */}
+            {lastError ? (
+              <View style={{ padding: 10, backgroundColor: '#FFEBEE', margin: 10, borderRadius: 5, borderWidth: 1, borderColor: '#FFCDD2' }}>
+                <Text style={{ fontWeight: 'bold', color: '#D32F2F', marginBottom: 5 }}>Last Error (Select & Copy):</Text>
+                <TextInput
+                  multiline
+                  editable={false}
+                  value={lastError}
+                  style={{ color: '#D32F2F', fontSize: 12, height: 60, textAlignVertical: 'top' }}
+                />
+                <TouchableOpacity onPress={() => setLastError('')} style={{ alignSelf: 'flex-end', marginTop: 5 }}>
+                  <Text style={{ color: '#666', fontSize: 10 }}>[Clear Log]</Text>
+                </TouchableOpacity>
+              </View>
+            ) : null}
 
             <CustomKeypad
               onKeyPress={handleKeyPress}
