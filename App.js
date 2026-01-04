@@ -1403,8 +1403,8 @@ export default function App() {
       >
         <Ionicons name="close" size={30} color="#FFF" />
       </TouchableOpacity>
-      <View style={{ position: 'absolute', bottom: 10, left: 20 }}>
-        <Text style={{ color: '#CCC', fontSize: 12 }}>v1.7 (Hold Logic Fixed)</Text>
+      <View style={{ position: 'absolute', bottom: 10, left: 20, backgroundColor: 'yellow', padding: 5 }}>
+        <Text style={{ color: 'red', fontSize: 14, fontWeight: 'bold' }}>VERSION 1.9 (GRANULAR FIX)</Text>
       </View>
     </Animated.View>
   );

@@ -423,7 +423,7 @@ export const ticketService = {
             const batchBillNumber = Date.now();
 
             tickets.forEach(t => {
-                const enumType = mapTypeToEnum(t.boxType);
+                const enumType = this.mapTypeToEnum(t.boxType);
                 const key = `${t.number}_${enumType}`;
                 if (!cartCounts[key]) cartCounts[key] = { number: t.number, type: enumType, count: 0 };
                 cartCounts[key].count += parseInt(t.count);
@@ -629,6 +629,34 @@ export const ticketService = {
         for (const update of updates) {
             await supabase.from('tickets').update(update).eq('id', update.id);
         }
+    },
+
+    // Helper to map UI types to DB Enum
+    mapTypeToEnum(uiType) {
+        // v1.9 Logging
+        console.log("INTERNAL MAPPING V1.9:", uiType);
+
+        if (!uiType) return 'triple_straight';
+        const upper = uiType.toUpperCase();
+
+        // 3-Digit
+        if (upper === 'SUPER' || upper === 'TRIPLE_STRAIGHT') return 'triple_straight';
+        if (upper === 'BOX' || upper === 'TRIPLE_BOX') return 'triple_box';
+
+        // 2-Digit
+        if (upper === 'AB') return 'double_ab';
+        if (upper === 'AC') return 'double_ac';
+        if (upper === 'BC') return 'double_bc';
+
+        // 1-Digit
+        if (upper === 'A') return 'single_a';
+        if (upper === 'B') return 'single_b';
+        if (upper === 'C') return 'single_c';
+
+        // Passthrough
+        if (uiType.includes('_')) return uiType;
+
+        return 'triple_straight';
     }
 };
 
@@ -642,22 +670,6 @@ export const ticketService = {
 // We differentiate them by the ticket content (e.g. if we store "123 Box" in name? No, type is key).
 // This is a current limitation of v2 schema.
 
-function mapTypeToEnum(uiType) {
-    // SECURITY HOTFIX: User reports "invalid input value for enum ticket_type: 'triple_straight'"
-
-    // Explicitly Log for the user debug console
-    console.log("Mapping UI Type:", uiType);
-
-    if (uiType === 'SUPER') return 'triple';
-    if (uiType === 'BOX') return 'triple';
-    if (uiType === 'triple_straight') return 'triple'; // Handle if raw backend string passed
-    if (uiType === 'triple_box') return 'triple';
-
-    if (['AB', 'AC', 'BC'].includes(uiType)) return 'double';
-    if (['A', 'B', 'C'].includes(uiType)) return 'single';
-
-    return 'single'; // Default
-}
 
 // Helper: Check Permutation (ABC == CBA)
 function checkPermutation(str1, str2) {
