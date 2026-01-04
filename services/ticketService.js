@@ -373,173 +373,126 @@ export const ticketService = {
         return { data: true, error: null };
     },
 
-    // 2. Buy Tickets (UPDATED with Global Limits)
+    // 2. Buy Tickets (ULTRA FAST v2.0)
     async buyTicket(tickets, gameId, userId) {
-        if (!tickets || tickets.length === 0) return { error: { message: 'No tickets to save' } };
+        if (!tickets || tickets.length === 0) return { error: { message: 'No tickets in cart' } };
 
         try {
-            // A. Get Rates
-            const rates = await this.getUserRates(userId);
+            const start = Date.now();
+            console.log("⚡ Starting Ultra-Fast Save...");
 
-            // B. Calculate Cost & Prepare objects
-            const dbTickets = [];
-            let totalBatchCost = 0;
-
-            // Get Draw
-            const today = new Date().toISOString().split('T')[0];
-            let { data: draw, error: drawError } = await supabase
-                .from('daily_draws').select('id').eq('schedule_id', gameId).eq('draw_date', today).maybeSingle();
-            if (drawError) throw drawError;
-            if (!draw) {
-                const { data: newDraw, error: createError } = await supabase
-                    .from('daily_draws').insert([{ schedule_id: gameId, draw_date: today }]).select('id').single();
-                if (createError) throw createError;
-                draw = newDraw;
-            }
-
-            // *** GLOBAL & USER LIMIT CHECK (HIERARCHY) ***
-
-            // 1. Fetch Limits in Parallel
-            const adminQuery = supabase.from('users').select('id').eq('role', 'admin').maybeSingle();
-            const userLimQuery = supabase.from('user_limits').select('*').eq('user_id', userId).maybeSingle();
-
-            const [{ data: adminUser }, { data: userLimits }] = await Promise.all([adminQuery, userLimQuery]);
-
-            let gLimits = {
-                max_single_number_count: 1000,
-                max_double_number_count: 500,
-                max_triple_straight_count: 50,
-                max_triple_box_count: 50,
-                number_limit_overrides: {}
-            };
-            if (adminUser) {
-                const { data: lim } = await supabase.from('user_limits').select('*').eq('user_id', adminUser.id).maybeSingle();
-                if (lim) gLimits = lim;
-            }
-
-            // 3. Aggregate Cart Counts
-            const cartCounts = {};
-            const uniqueNumbers = new Set();
-            const batchBillNumber = Date.now();
-
-            tickets.forEach(t => {
+            // 1. Prepare data for RPC
+            const ratesMap = await this.getUserRates(userId);
+            let totalCost = 0;
+            const payload = tickets.map(t => {
                 const enumType = this.mapTypeToEnum(t.boxType);
-                const key = `${t.number}_${enumType}`;
-                if (!cartCounts[key]) cartCounts[key] = { number: t.number, type: enumType, count: 0 };
-                cartCounts[key].count += parseInt(t.count);
-                uniqueNumbers.add(t.number);
-
-                const rate = rates[enumType] || (rates[enumType]?.buy_rate) || 10.00;
-                totalBatchCost += parseInt(t.count) * rate;
-                dbTickets.push({
-                    draw_id: draw.id,
-                    user_id: userId,
-                    ticket_number: t.number,
-                    ticket_type: enumType,
-                    count: parseInt(t.count),
-                    cost_per_unit: rate,
-                    status: 'active',
-                    bill_number: batchBillNumber
-                });
+                const rate = ratesMap[enumType]?.buy_rate || 10.0;
+                totalCost += (parseInt(t.count) * rate);
+                return {
+                    number: t.number,
+                    type: enumType,
+                    count: parseInt(t.count)
+                };
             });
 
-            // 4. BATCH FETCH SOLD COUNTS (Major Optimization)
-            // Instead of querying inside the loop, we query ALL sold counts for these numbers in ONE go.
-            const { data: soldTicketsData } = await supabase
-                .from('tickets')
-                .select('ticket_number, ticket_type, count')
-                .eq('draw_id', draw.id)
-                .in('ticket_number', Array.from(uniqueNumbers))
-                .eq('status', 'active');
+            // ⚡ TRY THE DATA ENGINE (RPC) FIRST - This is the "World's Fastest" way
+            // One network trip vs many.
+            const { data: rpcData, error: rpcError } = await supabase.rpc('buy_tickets_bulk', {
+                p_user_id: userId,
+                p_game_id: gameId,
+                p_tickets: payload,
+                p_cost: totalCost
+            });
 
+            if (!rpcError && rpcData) {
+                if (rpcData.error) return { error: { message: rpcData.error } };
+                console.log(`✅ RPC Save Complete in ${Date.now() - start}ms`);
+                return {
+                    data: [{ id: 'batch', bill_number: rpcData.bill_number }],
+                    error: null
+                };
+            }
+
+            console.log("⚠️ RPC missing or failed, falling back to Optimized JS...");
+
+            // --- OPTIMIZED JS FALLBACK (Parallel Fetching) ---
+            const [
+                { data: userBal },
+                { data: adminUser },
+                { data: userLimits },
+                { data: existingDraw }
+            ] = await Promise.all([
+                supabase.from('users').select('balance').eq('id', userId).single(),
+                supabase.from('users').select('id').eq('role', 'admin').maybeSingle(),
+                supabase.from('user_limits').select('*').eq('user_id', userId).maybeSingle(),
+                supabase.from('daily_draws').select('id').eq('schedule_id', gameId).eq('draw_date', new Date().toISOString().split('T')[0]).maybeSingle()
+            ]);
+
+            if (userBal.balance < totalCost) return { error: { message: 'Insufficient Balance' } };
+
+            let drawId = existingDraw?.id;
+            if (!drawId) {
+                const { data: newDraw } = await supabase.from('daily_draws').insert([{ schedule_id: gameId, draw_date: new Date().toISOString().split('T')[0] }]).select('id').single();
+                drawId = newDraw.id;
+            }
+
+            // Fetch Admin Limits
+            let gLimits = {};
+            if (adminUser) {
+                const { data: lim } = await supabase.from('user_limits').select('*').eq('user_id', adminUser.id).maybeSingle();
+                gLimits = lim || {};
+            }
+
+            // Batch fetch sold totals
+            const uniqueNumbers = [...new Set(tickets.map(t => t.number))];
+            const { data: soldData } = await supabase.from('tickets').select('ticket_number, ticket_type, count').eq('draw_id', drawId).eq('status', 'active').in('ticket_number', uniqueNumbers);
             const soldTotals = {};
-            if (soldTicketsData) {
-                soldTicketsData.forEach(s => {
-                    const k = `${s.ticket_number}_${s.ticket_type}`;
-                    soldTotals[k] = (soldTotals[k] || 0) + s.count;
+            soldData?.forEach(s => { soldTotals[`${s.ticket_number}_${s.ticket_type}`] = (soldTotals[`${s.ticket_number}_${s.ticket_type}`] || 0) + s.count; });
+
+            // Local Validation
+            const isAdmin = userId === adminUser?.id;
+            const dbTickets = [];
+            const billNo = Date.now();
+
+            for (const t of tickets) {
+                const type = this.mapTypeToEnum(t.boxType);
+                const key = `${t.number}_${type}`;
+                let limit = 9999;
+
+                // Admin Global Limit
+                if (type.includes('single')) limit = gLimits.max_single_number_count || 1000;
+                else if (type.includes('double')) limit = gLimits.max_double_number_count || 500;
+                else limit = (type === 'triple_straight' ? gLimits.max_triple_straight_count : gLimits.max_triple_box_count) || 50;
+
+                // Global Hold
+                if (!isAdmin) {
+                    let hold = 0;
+                    if (type.includes('single')) hold = gLimits.hold_single_number_count || 0;
+                    else if (type.includes('double')) hold = gLimits.hold_double_number_count || 0;
+                    else hold = (type === 'triple_straight' ? gLimits.hold_triple_straight_count : gLimits.hold_triple_box_count) || 0;
+                    limit = Math.max(0, limit - hold);
+                }
+
+                if ((soldTotals[key] || 0) + parseInt(t.count) > limit) return { error: { message: `Limit reached for ${t.number}.` } };
+
+                dbTickets.push({
+                    draw_id: drawId, user_id: userId, ticket_number: t.number, ticket_type: type,
+                    count: parseInt(t.count), cost_per_unit: ratesMap[type]?.buy_rate || 10, bill_number: billNo
                 });
             }
 
-            // 5. Validate Limits Locally
-            const isAdminBuying = (userId === adminUser?.id);
+            // Final Save
+            const { data: finalData, error: finalErr } = await supabase.from('tickets').insert(dbTickets).select('id, bill_number');
+            if (finalErr) throw finalErr;
 
-            for (const key of Object.keys(cartCounts)) {
-                const item = cartCounts[key];
-                let finalLimit = 99999;
+            await supabase.from('users').update({ balance: userBal.balance - totalCost }).eq('id', userId);
 
-                // A. Base Limit: Global Admin Hard Cap
-                const gOverrides = gLimits.number_limit_overrides || {};
-                const gNumOverride = gOverrides[item.number];
-
-                if (gNumOverride && gNumOverride[item.type] !== undefined) {
-                    finalLimit = parseInt(gNumOverride[item.type]);
-                } else {
-                    if (item.type.includes('single')) finalLimit = gLimits.max_single_number_count || 1000;
-                    else if (item.type.includes('double')) finalLimit = gLimits.max_double_number_count || 500;
-                    else if (item.type === 'triple') finalLimit = gLimits.max_triple_straight_count || 50;
-                    else if (item.type === 'triple_straight') finalLimit = gLimits.max_triple_straight_count || 50;
-                    else if (item.type === 'triple_box') finalLimit = gLimits.max_triple_box_count || 50;
-                }
-
-                // B. APPLY GLOBAL HOLD (Only for non-admin users)
-                // If admin is buying, they can use the full Main Limit.
-                // If a sub-user is buying, they can only use (Main Limit - Admin Hold).
-                if (!isAdminBuying) {
-                    let holdVal = 0;
-                    if (item.type.includes('single')) holdVal = gLimits.hold_single_number_count || 0;
-                    else if (item.type.includes('double')) holdVal = gLimits.hold_double_number_count || 0;
-                    else if (item.type === 'triple' || item.type === 'triple_straight') holdVal = gLimits.hold_triple_straight_count || 0;
-                    else if (item.type === 'triple_box') holdVal = gLimits.hold_triple_box_count || 0;
-
-                    finalLimit = Math.max(0, finalLimit - holdVal);
-                }
-
-                // C. User-Specific Limit (Takes precedence if stricter than the current finalLimit)
-                if (userLimits) {
-                    let uVal = null;
-                    if (item.type.includes('single')) uVal = userLimits.max_single_number_count;
-                    else if (item.type.includes('double')) uVal = userLimits.max_double_number_count;
-                    else if (item.type === 'triple') uVal = userLimits.max_triple_straight_count || userLimits.max_triple_box_count;
-                    else if (item.type === 'triple_straight') uVal = userLimits.max_triple_straight_count;
-                    else if (item.type === 'triple_box') uVal = userLimits.max_triple_box_count;
-
-                    if (uVal !== null && uVal !== undefined) {
-                        finalLimit = Math.min(finalLimit, parseInt(uVal));
-                    }
-                }
-
-                const currentTotal = soldTotals[key] || 0;
-                if ((currentTotal + item.count) > finalLimit) {
-                    return { error: { message: `Limit exceeded for ${item.number} (${item.type}). Max: ${finalLimit}, Sold: ${currentTotal}. Remaining: ${finalLimit - currentTotal}` } };
-                }
-            }
-            // *** GLOBAL LIMIT CHECK END ***
-
-            // C. Validate PER-USER Limits (Daily Sales, etc.)
-            const limitCheck = await this.checkLimits(userId, tickets, totalBatchCost);
-            if (!limitCheck.allowed) {
-                return { error: { message: limitCheck.reason } };
-            }
-
-            // 5. INSERT TICKETS (Batch)
-            // Try to select 'bill_number' in case it was saved.
-            const { data: insertedData, error: insertError } = await supabase.from('tickets').insert(dbTickets).select('id, bill_number');
-            if (insertError) throw insertError; // Throw so we catch below
-
-            // 6. Update User Balance (Deduct Cost)
-            // Ideally use RPC for atomicity: decrement_balance(user_id, amount)
-            // For now: Fetch check update
-            const { data: userBal } = await supabase.from('users').select('balance').eq('id', userId).single();
-            if (userBal) {
-                const newBal = parseFloat(userBal.balance) - totalBatchCost;
-                await supabase.from('users').update({ balance: newBal }).eq('id', userId);
-            }
-
-            return { data: insertedData, error: null }; // Return inserted data (ids)
+            console.log(`✅ JS Save Complete in ${Date.now() - start}ms`);
+            return { data: finalData, error: null };
 
         } catch (error) {
-            console.error("Buy Ticket Error:", error);
-            return { data: null, error: error };
+            console.error("Critical Save Error:", error);
+            return { error: { message: error.message } };
         }
     },
     // 5. Declare Result (Admin)
