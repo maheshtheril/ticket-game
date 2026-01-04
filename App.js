@@ -437,8 +437,13 @@ export default function App() {
       alert(msg);
     } else {
       // SUCCESS!
-      // Get the ID of the first ticket to show as Bill Number
-      const billNo = (insertedTickets && insertedTickets.length > 0) ? insertedTickets[0].id : 'N/A';
+      // Display the Bill Number we just saved.
+      // If the DB returned it (which it might not if we didn't select it, but we know what we sent: the one derived from Date.now() effectively, 
+      // but 'insertedTickets' has the real data if we select *).
+      // The current buyTicket returns 'insertedData' which was .select('id'). 
+      // Let's rely on the first ID logic for continuity OR if we saved bill_number, we should ideally return IT.
+      // But for UI stability right now:
+      const billNo = (insertedTickets && insertedTickets.length > 0) ? (insertedTickets[0].bill_number || insertedTickets[0].id) : 'N/A';
 
       alert(`Saved Successfully! Bill #${billNo}`);
       setTickets([]);

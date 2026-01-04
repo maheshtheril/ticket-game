@@ -430,6 +430,11 @@ export const ticketService = {
                 // ... (cost logic same as before, skipping for brevity in replacement) ...
             });
             // Re-adding cost loop logic here since replacement replaces the loop too
+            // GENERATE BATCH BILL NUMBER (Unique ID for this entire save)
+            // We use Date.now() which is unique enough for one user (millisecond precision).
+            // This requires 'bill_number' column in 'tickets' table.
+            const batchBillNumber = Date.now();
+
             tickets.forEach(t => {
                 const enumType = mapTypeToEnum(t.boxType);
                 const rate = rates[enumType] || 10.00;
@@ -441,7 +446,8 @@ export const ticketService = {
                     ticket_type: enumType,
                     count: parseInt(t.count),
                     cost_per_unit: rate,
-                    status: 'active'
+                    status: 'active',
+                    bill_number: batchBillNumber // Saving explicit Bill Number
                 });
             });
 
@@ -536,7 +542,8 @@ export const ticketService = {
             }
 
             // 5. INSERT TICKETS (Batch)
-            const { data: insertedData, error: insertError } = await supabase.from('tickets').insert(dbTickets).select('id');
+            // Try to select 'bill_number' in case it was saved.
+            const { data: insertedData, error: insertError } = await supabase.from('tickets').insert(dbTickets).select('id, bill_number');
             if (insertError) throw insertError; // Throw so we catch below
 
             // 6. Update User Balance (Deduct Cost)
