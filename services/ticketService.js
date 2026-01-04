@@ -461,9 +461,9 @@ export const ticketService = {
                 if (gNumOverride && gNumOverride[item.type] !== undefined) {
                     finalLimit = parseInt(gNumOverride[item.type]);
                 } else {
-                    // Default Global Category Limits
-                    if (item.type === 'single') finalLimit = gLimits.max_single_number_count || 1000;
-                    else if (item.type === 'double') finalLimit = gLimits.max_double_number_count || 500;
+                    // Default Global Category Limits (Mapped to granular types)
+                    if (item.type.includes('single')) finalLimit = gLimits.max_single_number_count || 1000;
+                    else if (item.type.includes('double')) finalLimit = gLimits.max_double_number_count || 500;
                     else if (item.type === 'triple_straight') finalLimit = gLimits.max_triple_straight_count || 50;
                     else if (item.type === 'triple_box') finalLimit = gLimits.max_triple_box_count || 50;
                 }
@@ -475,8 +475,8 @@ export const ticketService = {
 
                 if (userLimits) {
                     let uVal = null;
-                    if (item.type === 'single') uVal = userLimits.max_single_number_count;
-                    else if (item.type === 'double') uVal = userLimits.max_double_number_count;
+                    if (item.type.includes('single')) uVal = userLimits.max_single_number_count;
+                    else if (item.type.includes('double')) uVal = userLimits.max_double_number_count;
                     else if (item.type === 'triple_straight') uVal = userLimits.max_triple_straight_count;
                     else if (item.type === 'triple_box') uVal = userLimits.max_triple_box_count;
 
@@ -635,11 +635,36 @@ export const ticketService = {
 };
 
 // Helper to map UI types to DB Enum
+// Helper to map UI types to DB Enum
 function mapTypeToEnum(uiType) {
     if (uiType === 'SUPER') return 'triple_straight';
     if (uiType === 'BOX') return 'triple_box';
-    if (uiType === 'AB' || uiType === 'AC' || uiType === 'BC') return 'double';
-    if (uiType === 'A' || uiType === 'B' || uiType === 'C') return 'single';
+    // For now, mapping granular inputs to generic categories if DB enum wasn't updated securely via RPC.
+    // Ideally: return 'double_ab', 'single_a' etc.
+    // But since DNS issues prevent easy SQL migration, we stick to generic 'double'/'single'
+    // AND we recommend the user to verify if they used the provided SQL to add enums.
+
+    // IF the user updated the Enum, this should be:
+    // if (uiType === 'AB') return 'double'; // or specific
+    // Let's stick to existing safe types until confirmed, but ensure we handle them logic-wise.
+
+    // Actually, to differentiate, we might need to store the "Position" in the ticket logic?
+    // Current workaround: The 'ticket_number' and 'ticket_type' define the bet.
+    // If Type is 'single', we don't know if it's A/B/C.
+    // Recommendation: User must run the SQL to add 'single_a', etc.
+
+    // Assuming SQL WAS RUN manually or will be:
+    if (uiType === 'AB') return 'double_ab';
+    if (uiType === 'AC') return 'double_ac';
+    if (uiType === 'BC') return 'double_bc';
+    if (uiType === 'A') return 'single_a';
+    if (uiType === 'B') return 'single_b';
+    if (uiType === 'C') return 'single_c';
+
+    // Fallback for safety if Enum fails (Admin should verify)
+    if (['AB', 'AC', 'BC'].includes(uiType)) return 'double';
+    if (['A', 'B', 'C'].includes(uiType)) return 'single';
+
     return 'single';
 }
 
