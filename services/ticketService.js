@@ -461,13 +461,16 @@ export const ticketService = {
             }
 
             // 5. Validate Limits Locally
+            const isAdminBuying = (userId === adminUser?.id);
+
             for (const key of Object.keys(cartCounts)) {
                 const item = cartCounts[key];
                 let finalLimit = 99999;
 
-                // Check Global Overrides
+                // A. Base Limit: Global Admin Hard Cap
                 const gOverrides = gLimits.number_limit_overrides || {};
                 const gNumOverride = gOverrides[item.number];
+
                 if (gNumOverride && gNumOverride[item.type] !== undefined) {
                     finalLimit = parseInt(gNumOverride[item.type]);
                 } else {
@@ -478,7 +481,20 @@ export const ticketService = {
                     else if (item.type === 'triple_box') finalLimit = gLimits.max_triple_box_count || 50;
                 }
 
-                // Check User Specific
+                // B. APPLY GLOBAL HOLD (Only for non-admin users)
+                // If admin is buying, they can use the full Main Limit.
+                // If a sub-user is buying, they can only use (Main Limit - Admin Hold).
+                if (!isAdminBuying) {
+                    let holdVal = 0;
+                    if (item.type.includes('single')) holdVal = gLimits.hold_single_number_count || 0;
+                    else if (item.type.includes('double')) holdVal = gLimits.hold_double_number_count || 0;
+                    else if (item.type === 'triple' || item.type === 'triple_straight') holdVal = gLimits.hold_triple_straight_count || 0;
+                    else if (item.type === 'triple_box') holdVal = gLimits.hold_triple_box_count || 0;
+
+                    finalLimit = Math.max(0, finalLimit - holdVal);
+                }
+
+                // C. User-Specific Limit (Takes precedence if stricter than the current finalLimit)
                 if (userLimits) {
                     let uVal = null;
                     if (item.type.includes('single')) uVal = userLimits.max_single_number_count;

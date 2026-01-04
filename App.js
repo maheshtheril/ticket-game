@@ -895,25 +895,30 @@ export default function App() {
                 </View>
               </View>
 
-              <Text style={{ fontWeight: 'bold', marginVertical: 10, fontSize: 16 }}>Retention/Hold Settings (Admin Only)</Text>
-              <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 10, backgroundColor: '#E0F7FA', padding: 10, borderRadius: 5 }}>
-                <View style={{ width: '48%' }}>
-                  <Text style={styles.inputLabel}>Hold Single</Text>
-                  <TextInput style={styles.inputField} value={userForm.holdSingle} onChangeText={t => updateForm('holdSingle', t)} keyboardType="numeric" />
-                </View>
-                <View style={{ width: '48%' }}>
-                  <Text style={styles.inputLabel}>Hold Double</Text>
-                  <TextInput style={styles.inputField} value={userForm.holdDouble} onChangeText={t => updateForm('holdDouble', t)} keyboardType="numeric" />
-                </View>
-                <View style={{ width: '48%' }}>
-                  <Text style={styles.inputLabel}>Hold 3-Str</Text>
-                  <TextInput style={styles.inputField} value={userForm.holdTripleStraight} onChangeText={t => updateForm('holdTripleStraight', t)} keyboardType="numeric" />
-                </View>
-                <View style={{ width: '48%' }}>
-                  <Text style={styles.inputLabel}>Hold 3-Box</Text>
-                  <TextInput style={styles.inputField} value={userForm.holdTripleBox} onChangeText={t => updateForm('holdTripleBox', t)} keyboardType="numeric" />
-                </View>
-              </View>
+              {/* Retention/Hold Settings (Only show if editing Admin/Global Profile) */}
+              {(editingUser.username === 'admin' || editingUser.role === 'admin') && (
+                <>
+                  <Text style={{ fontWeight: 'bold', marginVertical: 10, fontSize: 16 }}>Retention/Hold Settings (Global)</Text>
+                  <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 10, backgroundColor: '#E0F7FA', padding: 10, borderRadius: 5 }}>
+                    <View style={{ width: '48%' }}>
+                      <Text style={styles.inputLabel}>Hold Single</Text>
+                      <TextInput style={styles.inputField} value={userForm.holdSingle} onChangeText={t => updateForm('holdSingle', t)} keyboardType="numeric" />
+                    </View>
+                    <View style={{ width: '48%' }}>
+                      <Text style={styles.inputLabel}>Hold Double</Text>
+                      <TextInput style={styles.inputField} value={userForm.holdDouble} onChangeText={t => updateForm('holdDouble', t)} keyboardType="numeric" />
+                    </View>
+                    <View style={{ width: '48%' }}>
+                      <Text style={styles.inputLabel}>Hold 3-Str</Text>
+                      <TextInput style={styles.inputField} value={userForm.holdTripleStraight} onChangeText={t => updateForm('holdTripleStraight', t)} keyboardType="numeric" />
+                    </View>
+                    <View style={{ width: '48%' }}>
+                      <Text style={styles.inputLabel}>Hold 3-Box</Text>
+                      <TextInput style={styles.inputField} value={userForm.holdTripleBox} onChangeText={t => updateForm('holdTripleBox', t)} keyboardType="numeric" />
+                    </View>
+                  </View>
+                </>
+              )}
 
               <Text style={{ fontWeight: 'bold', marginTop: 15, marginBottom: 5 }}>Particular Number Limits (Special)</Text>
               <Text style={{ fontSize: 12, color: '#666', marginBottom: 10 }}>Format: Number=Limit (e.g. 7=50, 88=100). Comma separated.</Text>
@@ -1399,7 +1404,7 @@ export default function App() {
         <Ionicons name="close" size={30} color="#FFF" />
       </TouchableOpacity>
       <View style={{ position: 'absolute', bottom: 10, left: 20 }}>
-        <Text style={{ color: '#CCC', fontSize: 12 }}>v1.6 (Speed + UX Fixed)</Text>
+        <Text style={{ color: '#CCC', fontSize: 12 }}>v1.7 (Hold Logic Fixed)</Text>
       </View>
     </Animated.View>
   );
