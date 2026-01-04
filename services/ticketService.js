@@ -635,34 +635,23 @@ export const ticketService = {
 };
 
 // Helper to map UI types to DB Enum
-// Helper to map UI types to DB Enum
+// SCHEMA CONFIRMED: User is running database_schema_v2.sql clearly.
+// Line 4: CREATE TYPE ticket_type AS ENUM ('single', 'double', 'triple', 'quad');
+// It DOES NOT have 'triple_straight', 'triple_box', 'single_a' etc.
+// We MUST map to 'triple' for all 3-digit plays.
+
+// NOTE: This means 'Straight' and 'Box' are stored as the same 'triple' type in DB for now.
+// We differentiate them by the ticket content (e.g. if we store "123 Box" in name? No, type is key).
+// This is a current limitation of v2 schema.
+
 function mapTypeToEnum(uiType) {
-    // Fallback/Safety: Map everything back to basic types until User runs Migration SQL.
-    // If the error says "triple_straight" is invalid, it means even the BASIC enums might be wrong or case sensitive issues?
-    // Wait, the error is: invalid input value for enum ticket_type: "triple_straight"
-    // This implies 'triple_straight' is NOT in the DB enum.
-    // Let's check schema v3: CREATE TYPE ticket_type AS ENUM ('single', 'double', 'triple_straight', 'triple_box');
-    // If that was run, it should work.
-    // If schema v2 was run... v2 might have different enums?
-    // Let's assume v2/v3 conflict.
-
-    // CRITICAL FIX: If 'triple_straight' is failing, maybe the DB has mixed case or different names.
-    // But we must assume standard names.
-
-    // However, for the specfic error reported: "triple_straight" invalid.
-    // This usually means the Enum values are different.
-
-    // Reverting to STRINGS to see if that helps or maybe mapping to what IS there.
-    // If the user hasn't run the migration, 'single_a' etc will fail too.
-
-    // FORCE BASIC MAPPING for now to get ANY save working contextually.
-    if (uiType === 'SUPER') return 'triple_straight';
-    if (uiType === 'BOX') return 'triple_box';
+    if (uiType === 'SUPER') return 'triple';
+    if (uiType === 'BOX') return 'triple'; // Both map to 'triple' in v2
 
     if (['AB', 'AC', 'BC'].includes(uiType)) return 'double';
     if (['A', 'B', 'C'].includes(uiType)) return 'single';
 
-    return 'single';
+    return 'single'; // Default
 }
 
 // Helper: Check Permutation (ABC == CBA)
