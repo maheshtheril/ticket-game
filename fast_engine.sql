@@ -1,5 +1,5 @@
--- WORLD'S FASTEST SAVING ENGINE (v1.0)
--- This function runs entirely inside the database for sub-millisecond validation and saving.
+-- WORLD'S FASTEST SAVING ENGINE (v1.1)
+-- Added balance check skip for Admin role.
 
 CREATE OR REPLACE FUNCTION buy_tickets_bulk(
     p_user_id UUID,
@@ -11,6 +11,7 @@ DECLARE
     v_draw_id UUID;
     v_today DATE := CURRENT_DATE;
     v_user_bal NUMERIC;
+    v_user_role TEXT;
     v_admin_id UUID;
     v_admin_limits RECORD;
     v_user_limits RECORD;
@@ -27,10 +28,13 @@ BEGIN
         INSERT INTO daily_draws (schedule_id, draw_date) VALUES (p_game_id, v_today) RETURNING id INTO v_draw_id;
     END IF;
 
-    -- 2. Check Balance
-    SELECT balance INTO v_user_bal FROM users WHERE id = p_user_id FOR UPDATE;
-    IF v_user_bal < p_cost THEN
-        RETURN jsonb_build_object('error', 'Insufficient balance. Need ' || p_cost || ', have ' || v_user_bal);
+    -- 2. Check Balance (Skip for Admin)
+    SELECT balance, role INTO v_user_bal, v_user_role FROM users WHERE id = p_user_id FOR UPDATE;
+    
+    IF v_user_role <> 'admin' THEN
+        IF v_user_bal < p_cost THEN
+            RETURN jsonb_build_object('error', 'Insufficient balance. Need ' || p_cost || ', have ' || v_user_bal);
+        END IF;
     END IF;
 
     -- 3. Get Limits
@@ -76,8 +80,10 @@ BEGIN
     SELECT v_draw_id, p_user_id, x.number, x.type, x.count, (p_cost / (SELECT SUM(count) FROM jsonb_to_recordset(p_tickets) AS y(count INT))), v_bill_no
     FROM jsonb_to_recordset(p_tickets) AS x(number TEXT, type TEXT, count INT);
 
-    -- Deduct Balance
-    UPDATE users SET balance = balance - p_cost WHERE id = p_user_id;
+    -- Deduct Balance (Skip for Admin)
+    IF v_user_role <> 'admin' THEN
+        UPDATE users SET balance = balance - p_cost WHERE id = p_user_id;
+    END IF;
 
     RETURN jsonb_build_object('success', true, 'bill_number', v_bill_no);
 END;

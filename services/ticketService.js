@@ -422,13 +422,14 @@ export const ticketService = {
                 { data: userLimits },
                 { data: existingDraw }
             ] = await Promise.all([
-                supabase.from('users').select('balance').eq('id', userId).single(),
+                supabase.from('users').select('balance, role').eq('id', userId).single(),
                 supabase.from('users').select('id').eq('role', 'admin').maybeSingle(),
                 supabase.from('user_limits').select('*').eq('user_id', userId).maybeSingle(),
                 supabase.from('daily_draws').select('id').eq('schedule_id', gameId).eq('draw_date', new Date().toISOString().split('T')[0]).maybeSingle()
             ]);
 
-            if (userBal.balance < totalCost) return { error: { message: 'Insufficient Balance' } };
+            const userRole = userBal?.role;
+            if (userRole !== 'admin' && userBal.balance < totalCost) return { error: { message: 'Insufficient Balance' } };
 
             let drawId = existingDraw?.id;
             if (!drawId) {
@@ -485,7 +486,9 @@ export const ticketService = {
             const { data: finalData, error: finalErr } = await supabase.from('tickets').insert(dbTickets).select('id, bill_number');
             if (finalErr) throw finalErr;
 
-            await supabase.from('users').update({ balance: userBal.balance - totalCost }).eq('id', userId);
+            if (userRole !== 'admin') {
+                await supabase.from('users').update({ balance: userBal.balance - totalCost }).eq('id', userId);
+            }
 
             console.log(`✅ JS Save Complete in ${Date.now() - start}ms`);
             return { data: finalData, error: null };
