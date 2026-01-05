@@ -86,6 +86,7 @@ export default function App() {
   // Edit User State
   const [editingUser, setEditingUser] = useState(null);
   const [activeUserTab, setActiveUserTab] = useState('profile'); // profile, limits, rates
+  const [version, setVersion] = useState('v2.4.1 (PER-GAME LIMITS)');
   const [userForm, setUserForm] = useState({
     username: '', password: '', balance: '',
     dailyLimit: '', weeklyLimit: '',

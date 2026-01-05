@@ -1,5 +1,5 @@
--- WORLD'S FASTEST SAVING ENGINE (v1.1)
--- Added balance check skip for Admin role.
+-- WORLD'S FASTEST SAVING ENGINE (v1.2 - Per Game Limits)
+-- Replaced Global Admin Limits with Per-Game Limits from game_schedules table.
 
 CREATE OR REPLACE FUNCTION buy_tickets_bulk(
     p_user_id UUID,
@@ -13,7 +13,7 @@ DECLARE
     v_user_bal NUMERIC;
     v_user_role TEXT;
     v_admin_id UUID;
-    v_admin_limits RECORD;
+    v_game_limits RECORD;
     v_user_limits RECORD;
     v_item RECORD;
     v_sold_count INT;
@@ -37,32 +37,30 @@ BEGIN
         END IF;
     END IF;
 
-    -- 3. Get Limits
+    -- 3. Get Limits (Per Game)
+    SELECT * INTO v_game_limits FROM game_schedules WHERE id = p_game_id;
     SELECT id INTO v_admin_id FROM users WHERE role = 'admin' LIMIT 1;
-    -- Pick newest if duplicates exist
-    SELECT * INTO v_admin_limits FROM user_limits WHERE user_id = v_admin_id ORDER BY updated_at DESC LIMIT 1;
-    SELECT * INTO v_user_limits FROM user_limits WHERE user_id = p_user_id ORDER BY updated_at DESC LIMIT 1;
     v_is_admin := (p_user_id = v_admin_id);
     v_hold_val := 0;
 
     -- 4. Validate Each Ticket Batch in JSON
     FOR v_item IN SELECT * FROM jsonb_to_recordset(p_tickets) AS x(number TEXT, type TEXT, count INT)
     LOOP
-        -- A. Calculate Main Limit (Admin's Global Setting)
+        -- A. Calculate Main Limit (From Game Schedule)
         v_max_limit := 1000; -- Default
-        IF v_item.type LIKE '%single%' THEN v_max_limit := COALESCE(v_admin_limits.max_single_number_count, 1000);
-        ELSIF v_item.type LIKE '%double%' THEN v_max_limit := COALESCE(v_admin_limits.max_double_number_count, 500);
-        ELSIF v_item.type = 'triple_straight' THEN v_max_limit := COALESCE(v_admin_limits.max_triple_straight_count, 50);
-        ELSIF v_item.type = 'triple_box' THEN v_max_limit := COALESCE(v_admin_limits.max_triple_box_count, 50);
+        IF v_item.type LIKE '%single%' THEN v_max_limit := COALESCE(v_game_limits.max_single_limit, 1000);
+        ELSIF v_item.type LIKE '%double%' THEN v_max_limit := COALESCE(v_game_limits.max_double_limit, 500);
+        ELSIF v_item.type = 'triple_straight' THEN v_max_limit := COALESCE(v_game_limits.max_triple_straight_limit, 50);
+        ELSIF v_item.type = 'triple_box' THEN v_max_limit := COALESCE(v_game_limits.max_triple_box_limit, 50);
         END IF;
 
-        -- B. Apply Hold (If not admin)
+        -- B. Apply Hold (From Game Schedule) - If not admin
         IF NOT v_is_admin THEN
             v_hold_val := 0;
-            IF v_item.type LIKE '%single%' THEN v_hold_val := COALESCE(v_admin_limits.hold_single_number_count, 0);
-            ELSIF v_item.type LIKE '%double%' THEN v_hold_val := COALESCE(v_admin_limits.hold_double_number_count, 0);
-            ELSIF v_item.type = 'triple_straight' THEN v_hold_val := COALESCE(v_admin_limits.hold_triple_straight_count, 0);
-            ELSIF v_item.type = 'triple_box' THEN v_hold_val := COALESCE(v_admin_limits.hold_triple_box_count, 0);
+            IF v_item.type LIKE '%single%' THEN v_hold_val := COALESCE(v_game_limits.hold_single_limit, 0);
+            ELSIF v_item.type LIKE '%double%' THEN v_hold_val := COALESCE(v_game_limits.hold_double_limit, 0);
+            ELSIF v_item.type = 'triple_straight' THEN v_hold_val := COALESCE(v_game_limits.hold_triple_straight_limit, 0);
+            ELSIF v_item.type = 'triple_box' THEN v_hold_val := COALESCE(v_game_limits.hold_triple_box_limit, 0);
             END IF;
             v_max_limit := GREATEST(0, v_max_limit - v_hold_val);
         END IF;

@@ -1,133 +1,286 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, TextInput, ScrollView, TouchableOpacity, Alert, StyleSheet } from 'react-native';
+import { View, Text, TextInput, ScrollView, TouchableOpacity, Alert, StyleSheet, ActivityIndicator } from 'react-native';
 import { COLORS } from '../constants/theme';
 import { ticketService } from '../services/ticketService';
+import { Ionicons } from '@expo/vector-icons';
 
-export default function GlobalLimitsSettings() {
-    const [limits, setLimits] = useState({
-        max_single: '', max_double: '', max_triple_straight: '', max_triple_box: '',
-        hold_single: '', hold_double: '', hold_triple_straight: '', hold_triple_box: ''
-    });
+export default function GlobalLimitsSettings({ agent }) {
+    const [games, setGames] = useState([]);
+    const [loading, setLoading] = useState(true);
+    const [saving, setSaving] = useState(false);
+
+    // Matrix Data: { gameId: { max_single: val, ... } }
+    const [matrix, setMatrix] = useState({});
 
     useEffect(() => {
-        loadGlobalLimits();
+        loadData();
     }, []);
 
-    const loadGlobalLimits = async () => {
+    const loadData = async () => {
+        setLoading(true);
         try {
-            // 1. Get Admin User
-            const { data: admin } = await ticketService.supabase.from('users').select('id').eq('role', 'admin').single();
-            if (!admin) return;
+            // Fetch all games ordered by draw time (or name)
+            const { data, error } = await ticketService.supabase
+                .from('game_schedules')
+                .select('*')
+                .order('name'); // You might want to order by draw_time if available
 
-            // 2. Get Limits
-            const { data: lim } = await ticketService.supabase.from('user_limits').select('*').eq('user_id', admin.id).single();
-            if (lim) {
-                setLimits({
-                    max_single: lim.max_single_number_count?.toString() || '',
-                    max_double: lim.max_double_number_count?.toString() || '',
-                    max_triple_straight: lim.max_triple_straight_count?.toString() || '',
-                    max_triple_box: lim.max_triple_box_count?.toString() || '',
-                    hold_single: lim.hold_single_number_count?.toString() || '',
-                    hold_double: lim.hold_double_number_count?.toString() || '',
-                    hold_triple_straight: lim.hold_triple_straight_count?.toString() || '',
-                    hold_triple_box: lim.hold_triple_box_count?.toString() || ''
-                });
+            if (error) throw error;
+
+            const initialMatrix = {};
+            data.forEach(g => {
+                initialMatrix[g.id] = {
+                    id: g.id,
+                    name: g.name,
+                    max_single: g.max_single_limit?.toString() || '1000',
+                    max_double: g.max_double_limit?.toString() || '500',
+                    max_triple_straight: g.max_triple_straight_limit?.toString() || '50',
+                    max_triple_box: g.max_triple_box_limit?.toString() || '50',
+                    hold_single: g.hold_single_limit?.toString() || '250',
+                    hold_double: g.hold_double_limit?.toString() || '100',
+                    hold_triple_straight: g.hold_triple_straight_limit?.toString() || '20',
+                    hold_triple_box: g.hold_triple_box_limit?.toString() || '20'
+                };
+            });
+            setGames(data);
+            setMatrix(initialMatrix);
+        } catch (e) {
+            console.error("Error loading limits:", e);
+            Alert.alert("Error", "Failed to load game limits.");
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    const updateCell = (gameId, field, value) => {
+        setMatrix(prev => ({
+            ...prev,
+            [gameId]: {
+                ...prev[gameId],
+                [field]: value
             }
-        } catch (e) { console.error(e); }
+        }));
     };
 
-    const handleSave = async () => {
+    // Apply value from one cell to ALL rows for that column
+    const applyToAll = (field, value) => {
+        if (!value) return;
+        Alert.alert(
+            "Apply to All?",
+            `Set ${field.replace(/_/g, ' ').toUpperCase()} to ${value} for ALL games?`,
+            [
+                { text: "Cancel", style: "cancel" },
+                {
+                    text: "Apply",
+                    onPress: () => {
+                        setMatrix(prev => {
+                            const newMatrix = { ...prev };
+                            Object.keys(newMatrix).forEach(key => {
+                                newMatrix[key] = { ...newMatrix[key], [field]: value };
+                            });
+                            return newMatrix;
+                        });
+                    }
+                }
+            ]
+        );
+    };
+
+    const handleSaveAll = async () => {
+        setSaving(true);
         try {
-            const { data: admin } = await ticketService.supabase.from('users').select('id').eq('role', 'admin').single();
-            if (!admin) return;
+            const updates = Object.values(matrix).map(row => ({
+                id: row.id,
+                max_single_limit: parseInt(row.max_single) || 0,
+                max_double_limit: parseInt(row.max_double) || 0,
+                max_triple_straight_limit: parseInt(row.max_triple_straight) || 0,
+                max_triple_box_limit: parseInt(row.max_triple_box) || 0,
+                hold_single_limit: parseInt(row.hold_single) || 0,
+                hold_double_limit: parseInt(row.hold_double) || 0,
+                hold_triple_straight_limit: parseInt(row.hold_triple_straight) || 0,
+                hold_triple_box_limit: parseInt(row.hold_triple_box) || 0,
+            }));
 
-            const payload = {
-                max_single_number_count: parseInt(limits.max_single) || null,
-                max_double_number_count: parseInt(limits.max_double) || null,
-                max_triple_straight_count: parseInt(limits.max_triple_straight) || null,
-                max_triple_box_count: parseInt(limits.max_triple_box) || null,
-                hold_single_number_count: parseInt(limits.hold_single) || null,
-                hold_double_number_count: parseInt(limits.hold_double) || null,
-                hold_triple_straight_count: parseInt(limits.hold_triple_straight) || null,
-                hold_triple_box_count: parseInt(limits.hold_triple_box) || null,
-            };
+            // Supabase upsert/update doesn't support bulk update with different values easily in one query 
+            // without complex SQL or JSON. We will do parallel requests (safe for < 50 items).
+            const promises = updates.map(u =>
+                ticketService.supabase.from('game_schedules').update(u).eq('id', u.id)
+            );
 
-            const { error } = await ticketService.supabase.from('user_limits').upsert({ user_id: admin.id, ...payload }, { onConflict: 'user_id' });
-
-            if (error) Alert.alert("Error", error.message);
-            else Alert.alert("Success", "Global Limits Updated!");
-
-        } catch (e) { Alert.alert("Error", e.message); }
+            await Promise.all(promises);
+            Alert.alert("Success", "All limits updated successfully!");
+            loadData(); // Reload to confirm
+        } catch (e) {
+            console.error(e);
+            Alert.alert("Error", "Failed to save limits.");
+        } finally {
+            setSaving(false);
+        }
     };
 
-    const update = (field, val) => setLimits(p => ({ ...p, [field]: val }));
+    if (loading) return <ActivityIndicator size="large" color={COLORS.primary} style={{ marginTop: 50 }} />;
 
     return (
-        <ScrollView style={{ padding: 15, backgroundColor: '#FFF' }}>
-            <Text style={{ fontWeight: 'bold', fontSize: 18, marginBottom: 15, color: COLORS.primary }}>Global Main Count Limits (Hard Cap)</Text>
-            <Text style={{ fontSize: 12, color: '#666', marginBottom: 15 }}>Max total sales allowed system-wide. No user can exceed this.</Text>
-
-            <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 10, marginBottom: 20 }}>
-                <View style={{ width: '48%' }}>
-                    <Text style={{ fontWeight: 'bold' }}>Single</Text>
-                    <TextInput style={styles.input} value={limits.max_single} onChangeText={t => update('max_single', t)} keyboardType="numeric" />
+        <View style={{ flex: 1, backgroundColor: '#F8F9FA' }}>
+            <View style={{ padding: 15, borderBottomWidth: 1, borderBottomColor: '#DDD', backgroundColor: '#FFF', flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
+                <View>
+                    <Text style={{ fontSize: 20, fontWeight: 'bold', color: '#2C3E50' }}>Global Limits Matrix</Text>
+                    <Text style={{ fontSize: 12, color: '#7F8C8D' }}>Manage Risk & Retention for all draws in one place.</Text>
                 </View>
-                <View style={{ width: '48%' }}>
-                    <Text style={{ fontWeight: 'bold' }}>Double</Text>
-                    <TextInput style={styles.input} value={limits.max_double} onChangeText={t => update('max_double', t)} keyboardType="numeric" />
-                </View>
-                <View style={{ width: '48%' }}>
-                    <Text style={{ fontWeight: 'bold' }}>Triple Straight</Text>
-                    <TextInput style={styles.input} value={limits.max_triple_straight} onChangeText={t => update('max_triple_straight', t)} keyboardType="numeric" />
-                </View>
-                <View style={{ width: '48%' }}>
-                    <Text style={{ fontWeight: 'bold' }}>Triple Box</Text>
-                    <TextInput style={styles.input} value={limits.max_triple_box} onChangeText={t => update('max_triple_box', t)} keyboardType="numeric" />
-                </View>
+                <TouchableOpacity
+                    style={{ backgroundColor: saving ? '#95A5A6' : '#27AE60', paddingHorizontal: 20, paddingVertical: 10, borderRadius: 6, flexDirection: 'row', alignItems: 'center' }}
+                    onPress={handleSaveAll}
+                    disabled={saving}
+                >
+                    {saving ? <ActivityIndicator size="small" color="#FFF" style={{ marginRight: 5 }} /> : <Ionicons name="save-outline" size={18} color="#FFF" style={{ marginRight: 5 }} />}
+                    <Text style={{ color: '#FFF', fontWeight: 'bold' }}>SAVE CHANGES</Text>
+                </TouchableOpacity>
             </View>
 
-            <View style={{ height: 1, backgroundColor: '#CCC', marginVertical: 10 }} />
+            <ScrollView horizontal showsHorizontalScrollIndicator={true} contentContainerStyle={{ flexGrow: 1 }}>
+                <View>
+                    {/* HEADER ROW */}
+                    <View style={styles.headerRow}>
+                        <View style={[styles.cell, { width: 140, backgroundColor: '#ECF0F1', borderBottomWidth: 0 }]}>
+                            <Text style={[styles.headerText, { fontSize: 12, marginTop: 10 }]}>GAME / DRAW</Text>
+                        </View>
 
-            <Text style={{ fontWeight: 'bold', fontSize: 18, marginBottom: 15, color: '#E65100' }}>Global Hold Count Limits (Retention)</Text>
-            <Text style={{ fontSize: 12, color: '#666', marginBottom: 15 }}>Sales retention threshold. Excess goes to Offload Report.</Text>
+                        {/* MAIN CAPS GROUP */}
+                        <View style={styles.groupHeaderContainer}>
+                            <View style={[styles.groupHeader, { backgroundColor: '#E8F6F3' }]}>
+                                <Text style={[styles.groupTitle, { color: '#16A085' }]}>HARD LIMITS (CAPS)</Text>
+                            </View>
+                            <View style={{ flexDirection: 'row' }}>
+                                <HeaderCell label="Single" code="max_single" onApply={applyToAll} color="#16A085" />
+                                <HeaderCell label="Double" code="max_double" onApply={applyToAll} color="#16A085" />
+                                <HeaderCell label="Tri. Str" code="max_triple_straight" onApply={applyToAll} color="#16A085" />
+                                <HeaderCell label="Tri. Box" code="max_triple_box" onApply={applyToAll} color="#16A085" />
+                            </View>
+                        </View>
 
-            <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 10, marginBottom: 30 }}>
-                <View style={{ width: '48%' }}>
-                    <Text style={{ fontWeight: 'bold' }}>Hold Single</Text>
-                    <TextInput style={styles.input} value={limits.hold_single} onChangeText={t => update('hold_single', t)} keyboardType="numeric" />
-                </View>
-                <View style={{ width: '48%' }}>
-                    <Text style={{ fontWeight: 'bold' }}>Hold Double</Text>
-                    <TextInput style={styles.input} value={limits.hold_double} onChangeText={t => update('hold_double', t)} keyboardType="numeric" />
-                </View>
-                <View style={{ width: '48%' }}>
-                    <Text style={{ fontWeight: 'bold' }}>Hold 3-Str</Text>
-                    <TextInput style={styles.input} value={limits.hold_triple_straight} onChangeText={t => update('hold_triple_straight', t)} keyboardType="numeric" />
-                </View>
-                <View style={{ width: '48%' }}>
-                    <Text style={{ fontWeight: 'bold' }}>Hold 3-Box</Text>
-                    <TextInput style={styles.input} value={limits.hold_triple_box} onChangeText={t => update('hold_triple_box', t)} keyboardType="numeric" />
-                </View>
-            </View>
+                        {/* HOLD LIMITS GROUP */}
+                        <View style={styles.groupHeaderContainer}>
+                            <View style={[styles.groupHeader, { backgroundColor: '#FDEDEC' }]}>
+                                <Text style={[styles.groupTitle, { color: '#C0392B' }]}>RETENTION (HOLD)</Text>
+                            </View>
+                            <View style={{ flexDirection: 'row' }}>
+                                <HeaderCell label="Single" code="hold_single" onApply={applyToAll} color="#C0392B" />
+                                <HeaderCell label="Double" code="hold_double" onApply={applyToAll} color="#C0392B" />
+                                <HeaderCell label="Tri. Str" code="hold_triple_straight" onApply={applyToAll} color="#C0392B" />
+                                <HeaderCell label="Tri. Box" code="hold_triple_box" onApply={applyToAll} color="#C0392B" />
+                            </View>
+                        </View>
+                    </View>
 
-            <TouchableOpacity
-                style={{ backgroundColor: COLORS.primary, padding: 15, borderRadius: 8, alignItems: 'center', marginBottom: 50 }}
-                onPress={handleSave}
-            >
-                <Text style={{ color: '#FFF', fontWeight: 'bold', fontSize: 16 }}>UPDATE GLOBAL SETTINGS</Text>
-            </TouchableOpacity>
-        </ScrollView>
+                    <ScrollView style={{ marginBottom: 50 }}>
+                        {games.map((game, index) => {
+                            const row = matrix[game.id] || {};
+                            return (
+                                <View key={game.id} style={[styles.row, index % 2 === 0 ? { backgroundColor: '#FFF' } : { backgroundColor: '#F9F9F9' }]}>
+                                    <View style={[styles.cell, { width: 140, justifyContent: 'center', alignItems: 'flex-start', paddingLeft: 10 }]}>
+                                        <Text style={{ fontWeight: 'bold', color: '#34495E', fontSize: 13 }}>{game.name}</Text>
+                                        <Text style={{ fontSize: 10, color: '#95A5A6' }}>{new Date('2000-01-01T' + game.draw_time).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</Text>
+                                    </View>
+
+                                    {/* MAX CAPS */}
+                                    <InputCell value={row.max_single} onChange={v => updateCell(game.id, 'max_single', v)} />
+                                    <InputCell value={row.max_double} onChange={v => updateCell(game.id, 'max_double', v)} />
+                                    <InputCell value={row.max_triple_straight} onChange={v => updateCell(game.id, 'max_triple_straight', v)} />
+                                    <InputCell value={row.max_triple_box} onChange={v => updateCell(game.id, 'max_triple_box', v)} />
+
+                                    {/* HOLD LIMITS */}
+                                    <InputCell value={row.hold_single} onChange={v => updateCell(game.id, 'hold_single', v)} highlight />
+                                    <InputCell value={row.hold_double} onChange={v => updateCell(game.id, 'hold_double', v)} highlight />
+                                    <InputCell value={row.hold_triple_straight} onChange={v => updateCell(game.id, 'hold_triple_straight', v)} highlight />
+                                    <InputCell value={row.hold_triple_box} onChange={v => updateCell(game.id, 'hold_triple_box', v)} highlight />
+                                </View>
+                            );
+                        })}
+                    </ScrollView>
+                </View>
+            </ScrollView>
+        </View>
     );
 }
 
+const HeaderCell = ({ label, code, onApply, color }) => (
+    <View style={[styles.cell, { backgroundColor: color + '08', height: 50, justifyContent: 'space-between', paddingVertical: 5 }]}>
+        <Text style={[styles.headerText, { color }]}>{label}</Text>
+        <TouchableOpacity onPress={() => Alert.prompt(`Bulk Set ${label}`, `Enter value to apply to ALL games:`, t => t && onApply(code, t))}>
+            <Ionicons name="arrow-down-circle" size={20} color={color} style={{ opacity: 0.8 }} />
+        </TouchableOpacity>
+    </View>
+);
+
+const InputCell = ({ value, onChange, highlight }) => (
+    <View style={styles.cell}>
+        <TextInput
+            style={[styles.input, highlight ? styles.inputHighlight : null]}
+            value={value}
+            onChangeText={onChange}
+            keyboardType="numeric"
+            selectTextOnFocus
+        />
+    </View>
+);
+
 const styles = StyleSheet.create({
+    headerRow: {
+        flexDirection: 'row',
+        borderBottomWidth: 2,
+        borderBottomColor: '#BDC3C7',
+        backgroundColor: '#F4F6F6'
+    },
+    groupHeaderContainer: {
+
+    },
+    groupHeader: {
+        alignItems: 'center',
+        paddingVertical: 4,
+        borderBottomWidth: 1,
+        borderBottomColor: 'rgba(0,0,0,0.05)'
+    },
+    groupTitle: {
+        fontSize: 10,
+        fontWeight: '900',
+        letterSpacing: 1
+    },
+    row: {
+        flexDirection: 'row',
+        borderBottomWidth: 1,
+        borderBottomColor: '#ECF0F1',
+        height: 45,
+        alignItems: 'center'
+    },
+    cell: {
+        width: 85,
+        padding: 4,
+        justifyContent: 'center',
+        alignItems: 'center',
+        borderRightWidth: 1,
+        borderRightColor: '#ECF0F1'
+    },
+    headerText: {
+        fontSize: 11,
+        fontWeight: 'bold',
+        textAlign: 'center'
+    },
     input: {
+        width: '100%',
+        height: 34,
         borderWidth: 1,
-        borderColor: '#CCC',
+        borderColor: '#D7DBDD',
         borderRadius: 4,
-        padding: 8,
-        marginTop: 5,
-        backgroundColor: '#F9F9F9',
-        fontSize: 16
+        textAlign: 'center',
+        paddingHorizontal: 0,
+        backgroundColor: '#FFF',
+        fontSize: 13,
+        color: '#2C3E50'
+    },
+    inputHighlight: {
+        borderColor: '#E6B0AA',
+        backgroundColor: '#FDEDEC',
+        color: '#C0392B',
+        fontWeight: 'bold'
     }
 });

@@ -308,7 +308,7 @@ export default function AdminPanel({ agent, onBack, onNavigate, setEditingUser, 
                 )}
 
                 {adminTab === 'globalLimits' && (
-                    <GlobalLimitsSettings />
+                    <GlobalLimitsSettings agent={agent} />
                 )}
 
                 {adminTab === 'exposure' && (
@@ -345,25 +345,28 @@ function ExposureReport({ allGames }) {
     });
 
     useEffect(() => {
-        // Fetch Admin's Hold Limits
-        const loadLimits = async () => {
+        if (!selectedGameId) return;
+
+        const loadGameLimits = async () => {
             try {
-                const { data: adminUser } = await ticketService.supabase.from('users').select('id').eq('role', 'admin').maybeSingle();
-                if (adminUser) {
-                    const { data: lim } = await ticketService.supabase.from('user_limits').select('*').eq('user_id', adminUser.id).single();
-                    if (lim) {
-                        setRetentionSettings({
-                            'single': lim.hold_single_number_count || 250,
-                            'double': lim.hold_double_number_count || 100,
-                            'triple_straight': lim.hold_triple_straight_count || 20,
-                            'triple_box': lim.hold_triple_box_count || 20
-                        });
-                    }
+                const { data: game, error } = await ticketService.supabase
+                    .from('game_schedules')
+                    .select('*')
+                    .eq('id', selectedGameId)
+                    .single();
+
+                if (game) {
+                    setRetentionSettings({
+                        'single': game.hold_single_limit || 250,
+                        'double': game.hold_double_limit || 100,
+                        'triple_straight': game.hold_triple_straight_limit || 20,
+                        'triple_box': game.hold_triple_box_limit || 20
+                    });
                 }
-            } catch (e) { console.error(e); }
+            } catch (e) { console.error("Exposure Report Limit Load Error:", e); }
         };
-        loadLimits();
-    }, []);
+        loadGameLimits();
+    }, [selectedGameId]);
 
     const runReport = async () => {
         if (!selectedGameId) {
@@ -439,7 +442,7 @@ function ExposureReport({ allGames }) {
 
             <View style={{ backgroundColor: '#E3F2FD', padding: 15, borderRadius: 8, marginBottom: 20 }}>
                 <Text style={{ fontWeight: 'bold', color: '#1565C0', marginBottom: 5 }}>Current Retention Limits (Hold)</Text>
-                <Text style={{ fontSize: 12, color: '#555' }}>To change these, go to "Limits" tab and edit Admin Profile.</Text>
+                <Text style={{ fontSize: 12, color: '#555' }}>These are the Hold Limits for the selected game.</Text>
                 <View style={{ flexDirection: 'row', flexWrap: 'wrap', marginTop: 10 }}>
                     <Text style={{ width: '50%', fontSize: 13 }}>Single: <Text style={{ fontWeight: 'bold' }}>{retentionSettings.single}</Text></Text>
                     <Text style={{ width: '50%', fontSize: 13 }}>Double: <Text style={{ fontWeight: 'bold' }}>{retentionSettings.double}</Text></Text>
