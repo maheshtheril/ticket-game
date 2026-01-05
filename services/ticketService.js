@@ -587,6 +587,28 @@ export const ticketService = {
         }
     },
 
+    // 7. Seed Default Games (If empty)
+    async seedDefaultGames() {
+        const defaults = [
+            { name: 'Morning Draw (11:00 AM)', draw_time: '11:00', is_active: true },
+            { name: 'Day Draw (1:00 PM)', draw_time: '13:00', is_active: true },
+            { name: 'Afternoon Draw (3:00 PM)', draw_time: '15:00', is_active: true },
+            { name: 'Evening Draw (6:00 PM)', draw_time: '18:00', is_active: true },
+            { name: 'Night Draw (9:00 PM)', draw_time: '21:00', is_active: true }
+        ];
+
+        try {
+            const { data: existing } = await supabase.from('game_schedules').select('id');
+            if (existing && existing.length > 0) return { error: `Games already exist (${existing.length} found).` };
+
+            const { data, error } = await supabase.from('game_schedules').insert(defaults).select();
+            if (error) throw error;
+            return { data, error: null };
+        } catch (e) {
+            return { error: e.message };
+        }
+    },
+
     // Helper to map UI types to DB Enum
     mapTypeToEnum(uiType) {
         // v1.9 Logging
